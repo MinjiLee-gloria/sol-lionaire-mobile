@@ -1,43 +1,53 @@
 import React, { useEffect, useRef } from 'react';
 import { View, Text, StyleSheet, Animated } from 'react-native';
-import { Colors, Typography, Spacing } from '../styles/theme';
 
-/**
- * Calculating Animation Component
- * Simulates luxury calculation process
- */
+const P = {
+  black: '#0A0A0A',
+  gold: '#C9A84C',
+  goldLight: '#E8C96A',
+  offWhite: '#F5F0E8',
+};
+
 export const CalculatingAnimation = ({ visible }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
-  const scaleAnim = useRef(new Animated.Value(0.8)).current;
-  const rotateAnim = useRef(new Animated.Value(0)).current;
+  const ripple1 = useRef(new Animated.Value(0)).current;
+  const ripple2 = useRef(new Animated.Value(0)).current;
+  const ripple3 = useRef(new Animated.Value(0)).current;
 
   useEffect(() => {
     if (visible) {
-      // Fade in + Scale up
-      Animated.parallel([
-        Animated.timing(fadeAnim, {
-          toValue: 1,
-          duration: 300,
-          useNativeDriver: true,
-        }),
-        Animated.spring(scaleAnim, {
-          toValue: 1,
-          friction: 8,
-          tension: 40,
-          useNativeDriver: true,
-        }),
-      ]).start();
+      // Fade in
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 300,
+        useNativeDriver: true,
+      }).start();
 
-      // Continuous rotation
-      Animated.loop(
-        Animated.timing(rotateAnim, {
-          toValue: 1,
-          duration: 2000,
-          useNativeDriver: true,
-        })
-      ).start();
+      // Ripple animation
+      const createRipple = (anim, delay) => {
+        return Animated.loop(
+          Animated.sequence([
+            Animated.delay(delay),
+            Animated.parallel([
+              Animated.timing(anim, {
+                toValue: 1,
+                duration: 2000,
+                useNativeDriver: true,
+              }),
+            ]),
+            Animated.timing(anim, {
+              toValue: 0,
+              duration: 0,
+              useNativeDriver: true,
+            }),
+          ])
+        );
+      };
+
+      createRipple(ripple1, 0).start();
+      createRipple(ripple2, 666).start();
+      createRipple(ripple3, 1333).start();
     } else {
-      // Fade out
       Animated.timing(fadeAnim, {
         toValue: 0,
         duration: 200,
@@ -48,131 +58,84 @@ export const CalculatingAnimation = ({ visible }) => {
 
   if (!visible) return null;
 
-  const rotate = rotateAnim.interpolate({
-    inputRange: [0, 1],
-    outputRange: ['0deg', '360deg'],
+  const createRippleStyle = (anim) => ({
+    opacity: anim.interpolate({
+      inputRange: [0, 0.5, 1],
+      outputRange: [0.8, 0.4, 0],
+    }),
+    transform: [
+      {
+        scale: anim.interpolate({
+          inputRange: [0, 1],
+          outputRange: [0, 2.5],
+        }),
+      },
+    ],
   });
 
   return (
-    <Animated.View
-      style={[
-        styles.overlay,
-        {
-          opacity: fadeAnim,
-        },
-      ]}
-    >
-      <Animated.View
-        style={[
-          styles.container,
-          {
-            transform: [{ scale: scaleAnim }],
-          },
-        ]}
-      >
-        {/* Rotating Icon */}
-        <Animated.Text
-          style={[
-            styles.icon,
-            {
-              transform: [{ rotate }],
-            },
-          ]}
-        >
-          🏠
-        </Animated.Text>
-
-        {/* Loading Text */}
-        <Text style={styles.title}>Calculating...</Text>
-        <Text style={styles.subtitle}>Mapping your crypto real estate</Text>
-
-        {/* Progress Dots */}
-        <View style={styles.dotsContainer}>
-          <AnimatedDot delay={0} />
-          <AnimatedDot delay={200} />
-          <AnimatedDot delay={400} />
+    <Animated.View style={[s.overlay, { opacity: fadeAnim }]}>
+      <View style={s.container}>
+        {/* Gold Ripples */}
+        <View style={s.rippleContainer}>
+          <Animated.View style={[s.ripple, createRippleStyle(ripple1)]} />
+          <Animated.View style={[s.ripple, createRippleStyle(ripple2)]} />
+          <Animated.View style={[s.ripple, createRippleStyle(ripple3)]} />
+          <View style={s.centerDot} />
         </View>
-      </Animated.View>
+
+        {/* Text */}
+        <Text style={s.text}>Calculating your empire...</Text>
+      </View>
     </Animated.View>
   );
 };
 
-/**
- * Animated Dot Component
- */
-const AnimatedDot = ({ delay }) => {
-  const scaleAnim = useRef(new Animated.Value(0.5)).current;
-
-  useEffect(() => {
-    Animated.loop(
-      Animated.sequence([
-        Animated.delay(delay),
-        Animated.timing(scaleAnim, {
-          toValue: 1,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-        Animated.timing(scaleAnim, {
-          toValue: 0.5,
-          duration: 600,
-          useNativeDriver: true,
-        }),
-      ])
-    ).start();
-  }, []);
-
-  return (
-    <Animated.View
-      style={[
-        styles.dot,
-        {
-          transform: [{ scale: scaleAnim }],
-        },
-      ]}
-    />
-  );
-};
-
-const styles = StyleSheet.create({
+const s = StyleSheet.create({
   overlay: {
     position: 'absolute',
     top: 0,
     left: 0,
     right: 0,
     bottom: 0,
-    backgroundColor: 'rgba(0, 0, 0, 0.95)',
+    backgroundColor: 'rgba(10,10,10,0.95)',
     justifyContent: 'center',
     alignItems: 'center',
-    zIndex: 1000,
+    zIndex: 9999,
   },
   container: {
     alignItems: 'center',
-    padding: Spacing.xxxl,
   },
-  icon: {
-    fontSize: 80,
-    marginBottom: Spacing.xl,
+  rippleContainer: {
+    width: 120,
+    height: 120,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 32,
   },
-  title: {
-    fontSize: Typography.xxl,
-    fontWeight: Typography.bold,
-    color: Colors.gold,
-    marginBottom: Spacing.sm,
+  ripple: {
+    position: 'absolute',
+    width: 80,
+    height: 80,
+    borderRadius: 40,
+    borderWidth: 2,
+    borderColor: P.gold,
   },
-  subtitle: {
-    fontSize: Typography.base,
-    color: Colors.lightGray,
-    marginBottom: Spacing.xl,
+  centerDot: {
+    width: 16,
+    height: 16,
+    borderRadius: 8,
+    backgroundColor: P.goldLight,
+    shadowColor: P.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.8,
+    shadowRadius: 8,
   },
-  dotsContainer: {
-    flexDirection: 'row',
-    gap: Spacing.md,
-  },
-  dot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: Colors.gold,
+  text: {
+    fontSize: 18,
+    fontWeight: '600',
+    color: P.goldLight,
+    letterSpacing: 1,
   },
 });
 

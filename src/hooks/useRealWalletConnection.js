@@ -97,29 +97,13 @@ export const useRealWalletConnection = () => {
   }, []);
 
   const disconnectWallet = useCallback(async () => {
-    try {
-      if (Platform.OS === 'android' && authToken) {
-        await transact(async (wallet) => {
-          await wallet.deauthorize({ auth_token: authToken });
-        });
-      }
-    } catch (e) {
-      console.log('Deauthorize failed:', e);
-    } finally {
-      setWalletAddress(null);
-      setBalance(0);
-      setIsConnected(false);
-      setWalletName(null);
-      setAuthToken(null);
-      setError(null);
-    }
-  }, [authToken]);
-
-  const refreshBalance = useCallback(async () => {
-    if (!walletAddress) return;
-    const sol = await fetchBalance(walletAddress);
-    setBalance(sol);
-  }, [walletAddress]);
+    setWalletAddress(null);
+    setBalance(0);
+    setIsConnected(false);
+    setWalletName(null);
+    setAuthToken(null);
+    setError(null);
+  }, []);
 
   const signAndSendTransaction = useCallback(async (transaction) => {
     if (!isConnected || !walletAddress) throw new Error('Wallet not connected');
@@ -149,7 +133,7 @@ export const useRealWalletConnection = () => {
   return {
     walletAddress, balance, isConnected, isLoading,
     error, walletName, connectWallet, disconnectWallet,
-    signAndSendTransaction, refreshBalance,
+    signAndSendTransaction,
   };
 };
 

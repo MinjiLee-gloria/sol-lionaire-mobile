@@ -119,7 +119,7 @@ export default function HomeScreen() {
         cityPricePerSqm: pricePerSqm,
         cityType: selectedCity,
       });
-      await new Promise(r => setTimeout(r, 2000));
+      await new Promise(r => setTimeout(r, 1000));
       setMappingResult(result);
 
       const upgrade = valueCalculator.calculateUpgrade({
@@ -182,7 +182,7 @@ export default function HomeScreen() {
               <Text style={styles.balanceUsd}>
                 ≈ ${((balance || 0) * solPrice).toLocaleString(undefined, { maximumFractionDigits: 2 })}
               </Text>
-              <TouchableOpacity onPress={disconnectWallet} style={styles.disconnectButton}>
+              <TouchableOpacity onPress={() => { disconnectWallet(); setMappingResult(null); setUpgradeInfo(null); }} style={styles.disconnectButton}>
                 <Text style={styles.disconnectText}>Disconnect</Text>
               </TouchableOpacity>
             </View>

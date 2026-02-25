@@ -2,8 +2,10 @@
  * ResultCard - Sol-lionaire v0.4
  * 5-Tier Result Display
  */
-import React from 'react';
-import { View, Text, StyleSheet, Image } from 'react-native';
+import React, { useRef } from 'react';
+import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
+import { captureRef } from 'react-native-view-shot';
+import Share from 'react-native-share';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const P = {
@@ -35,13 +37,27 @@ const PROPERTY_IMAGES = {
 
 const ResultCard = ({ mappingResult }) => {
   if (!mappingResult) return null;
+
+  const viewRef = useRef();
+  
+  const handleShare = async () => {
+    try {
+      const uri = await captureRef(viewRef, { format: 'png', quality: 1 });
+      await Share.open({ url: `file://${uri}` });
+    } catch (e) {
+      console.log('Share failed', e);
+    }
+  };
+  
+
+  if (!mappingResult) return null;
   const { tier, level, propertyName, location, totalValue, sqm, narrative, starProgress, percentile } = mappingResult;
   const imageSource = tier.imageKey ? PROPERTY_IMAGES[tier.imageKey.MANHATTAN] : null;
-
   return (
-    <LinearGradient
-      colors={[P.dark, P.charcoal]}
-      style={[s.card, { borderColor: tier.color }]}
+    <View ref={viewRef} collapsable={false}>
+      <LinearGradient
+        colors={[P.dark, P.charcoal]}
+        style={[s.card, { borderColor: tier.color }]}
     >
       <LinearGradient
         colors={[P.goldDeep, P.gold, P.goldLight, P.gold, P.goldDeep]}
@@ -83,6 +99,10 @@ const ResultCard = ({ mappingResult }) => {
 
       <View style={s.narrativeWrap}>
         <Text style={s.narrative}>{narrative}</Text>
+    </View>
+    <TouchableOpacity style={s.shareButton} onPress={handleShare}>
+      <Text style={s.shareText}>📤 Share My Status</Text>
+    </TouchableOpacity>
       </View>
     </LinearGradient>
   );
@@ -104,6 +124,9 @@ const s = StyleSheet.create({
   divider: { width: 1, backgroundColor: P.mid },
   narrativeWrap: { marginTop: 20 },
   narrative: { fontSize: 14, color: P.gray, lineHeight: 22, textAlign: 'center', letterSpacing: 0.3, fontStyle: 'italic' },
+  shareButton: { marginTop: 20, backgroundColor: P.gold, paddingVertical: 14, paddingHorizontal: 24, borderRadius: 12, alignItems: 'center' },
+  shareText: { fontSize: 16, fontWeight: '700', color: P.black, letterSpacing: 0.5 },
+
 });
 
 export default ResultCard;
