@@ -331,7 +331,28 @@ class ValueCalculator {
       PROPERTY_TIERS[PROPERTY_TIERS.length - 1]
     );
   }
-
+  
+  getPercentile(solAmount) {
+    if (solAmount < 1) return "Newcomer";
+    
+    // Log scale continuous calculation
+    const logSOL = Math.log10(solAmount);
+    const logMax = Math.log10(500000); // Level 10 threshold
+    const rawPercentile = (logSOL / logMax) * 100;
+    
+    const rank = Math.round(100 - rawPercentile);
+    console.log("🔢 Debug - solAmount:", solAmount, "rank:", rank);
+    
+    if (rank < 1) return "Top 0.1%";
+    if (rank < 2) return "Top 1%";
+    if (rank < 5) return "Top 5%";
+    if (rank < 10) return "Top 10%";
+    if (rank < 20) return "Top 20%";
+    if (rank < 40) return "Top 40%";
+    if (rank < 60) return "Top 60%";
+    if (rank < 80) return "Top 80%";
+    return "Top 90%";
+  }
   calculateStarProgress(solAmount, tier) {
     const progress = ((solAmount - tier.minSOL) / (tier.maxSOL - tier.minSOL)) * 100;
     const clampedProgress = Math.min(Math.max(progress, 0), 99.9);
@@ -354,6 +375,8 @@ class ValueCalculator {
     const city = CITY_CONFIG[cityType];
     const starInfo = this.calculateStarProgress(solAmount, tier);
 
+    const percentile = this.getPercentile(solAmount);
+    console.log("Percentile:", percentile);
     return {
       totalValue: totalUSD,
       cityType,
@@ -364,8 +387,9 @@ class ValueCalculator {
       narrative: tier.narratives[cityType],
       description: tier.descriptions[cityType],
       imageKey: tier.imageKey[cityType],
-      sqm: Math.floor(totalUSD / city.pricePerSqm),
+      sqm: (totalUSD / city.pricePerSqm).toFixed(2),
       starProgress: starInfo,
+      percentile,
     };
   }
 
@@ -395,19 +419,6 @@ class ValueCalculator {
       currentTier,
       progress: Math.min(Math.max(progress, 0), 99),
     };
-  }
-
-  getPercentile(solAmount) {
-    if (solAmount >= 500000) return 0.001;
-    if (solAmount >= 150000) return 0.01;
-    if (solAmount >= 50000) return 0.1;
-    if (solAmount >= 10000) return 1;
-    if (solAmount >= 3500) return 5;
-    if (solAmount >= 1250) return 10;
-    if (solAmount >= 250) return 20;
-    if (solAmount >= 50) return 40;
-    if (solAmount >= 10) return 60;
-    return 80;
   }
 }
 
