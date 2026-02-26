@@ -1,11 +1,18 @@
 /**
- * Odyssey Screen - Sol-lionaire v0.4
- * Real User Asset History (No Fake Data)
+ * Empire Screen — Sol-lionaire
+ * Tab 2: The Vertical Progression
+ *
+ * Layout: 과거(Peek) → 현재(Sticky) → 미래(Scroll)
+ *  - A. NYC / Dubai toggle
+ *  - B. Legacy Peek   : previous level, partially visible at top (blurred/faded)
+ *  - C. Current Hero  : sticky card with full detail
+ *  - D. Progress      : gold progress bar + dynamic text
+ *  - E. Future targets: next +1 (silhouette), next +2 (dark/mysterious)
  */
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet,
-  TouchableOpacity, Linking, Alert, Dimensions,
+  View, Text, ScrollView, StyleSheet, Animated,
+  TouchableOpacity, Image, Dimensions, Linking,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -13,11 +20,29 @@ import { useWallet } from '../context/WalletContext';
 import { valueCalculator, PROPERTY_TIERS, CityType } from '../services/valueCalculator';
 import { priceDataService } from '../services/pythPriceService';
 
+const { width: W, height: H } = Dimensions.get('window');
+
+// ── Jupiter deep link: open app if installed, fall back to web ────────────────
+const JUP_WEB_URL = 'https://jup.ag/swap/USDC-SOL';
+const openJupiter = async () => {
+  try {
+    const canOpenApp = await Linking.canOpenURL('jup://');
+    if (canOpenApp) {
+      await Linking.openURL('jup://swap/USDC-SOL');
+    } else {
+      await Linking.openURL(JUP_WEB_URL);
+    }
+  } catch {
+    await Linking.openURL(JUP_WEB_URL);
+  }
+};
+
 const P = {
-  black:    '#0A0A0A',
-  charcoal: '#141414',
-  dark:     '#1C1C1C',
-  mid:      '#2A2A2A',
+  black:    '#000000',
+  charcoal: '#0A0A0A',
+  dark:     '#141414',
+  mid:      '#1C1C1C',
+  border:   '#2A2A2A',
   gray:     '#888888',
   offWhite: '#F5F0E8',
   gold:     '#C9A84C',
@@ -25,65 +50,364 @@ const P = {
   goldDeep: '#A07830',
 };
 
+const PROPERTY_IMAGES = {
+  ny_level1:  require('../../assets/images/properties/ny_level1.png'),
+  ny_level2:  require('../../assets/images/properties/ny_level2.png'),
+  ny_level3:  require('../../assets/images/properties/ny_level3.png'),
+  ny_level4:  require('../../assets/images/properties/ny_level4.png'),
+  ny_level5:  require('../../assets/images/properties/ny_level5.png'),
+  ny_level6:  require('../../assets/images/properties/ny_level6.png'),
+  ny_level7:  require('../../assets/images/properties/ny_level7.png'),
+  ny_level8:  require('../../assets/images/properties/ny_level8.png'),
+  ny_level9:  require('../../assets/images/properties/ny_level9.png'),
+  ny_level10: require('../../assets/images/properties/ny_level10.png'),
+};
+
+const getImage = (imageKey) => PROPERTY_IMAGES[imageKey] || PROPERTY_IMAGES['ny_level1'];
+
+// ── Heights for scroll math ───────────────────────────────────────────────────
+const PEEK_VISIBLE = 70;   // px of prev card visible above sticky current
+const PREV_CARD_H  = 260;  // full height of previous (peek) card
+const INITIAL_SCROLL = PREV_CARD_H - PEEK_VISIBLE;
+
+// ── Previous Level Peek Card ──────────────────────────────────────────────────
+const PrevCard = ({ tier, city }) => {
+  if (!tier) return <View style={{ height: PREV_CARD_H }} />;
+  const imgKey = tier.imageKey?.[city] ?? 'ny_level1';
+  return (
+    <View style={pc.wrap}>
+      <View style={pc.arrowHint}>
+        <Text style={pc.arrowText}>↑ View History</Text>
+      </View>
+      <View style={pc.card}>
+        <Image source={getImage(imgKey)} style={pc.image} resizeMode="cover" blurRadius={4} />
+        <View style={pc.overlay}>
+          <Text style={pc.eyebrow}>PREVIOUS · LEVEL {tier.level}</Text>
+          <Text style={pc.name}>{tier.names[city]}</Text>
+          <Text style={pc.loc}>📍 {tier.locations[city]}</Text>
+        </View>
+      </View>
+    </View>
+  );
+};
+
+const pc = StyleSheet.create({
+  wrap:      { height: PREV_CARD_H, marginHorizontal: 16 },
+  arrowHint: { alignItems: 'center', paddingVertical: 8 },
+  arrowText: { fontSize: 10, color: P.gold, letterSpacing: 3, fontWeight: '600' },
+  card: {
+    flex: 1,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: P.border,
+    overflow: 'hidden',
+    opacity: 0.4,
+  },
+  image:   { width: '100%', height: '100%', position: 'absolute' },
+  overlay: {
+    flex: 1,
+    backgroundColor: 'rgba(0,0,0,0.5)',
+    justifyContent: 'flex-end',
+    padding: 16,
+  },
+  eyebrow: { fontSize: 9, color: P.gold, letterSpacing: 3, marginBottom: 4 },
+  name:    { fontSize: 17, fontWeight: '700', color: P.offWhite, marginBottom: 2 },
+  loc:     { fontSize: 11, color: P.gray },
+});
+
+// ── Current Hero Card (becomes sticky) ───────────────────────────────────────
+const CurrentCard = ({ tier, city, solBalance, solPrice }) => {
+  if (!tier) return null;
+  const imgKey    = tier.imageKey?.[city] ?? 'ny_level1';
+  const totalUSD  = solBalance * solPrice;
+  const starInfo  = valueCalculator.calculateStarProgress(solBalance, tier);
+  const percentile = valueCalculator.getPercentile(solBalance);
+
+  return (
+    <View style={cc.wrap}>
+      <LinearGradient
+        colors={[P.goldDeep, P.gold, P.goldLight, P.gold, P.goldDeep]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+        style={cc.accentTop}
+      />
+      {/* Hero image */}
+      <Image source={getImage(imgKey)} style={cc.image} resizeMode="cover" />
+      <LinearGradient
+        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.85)']}
+        style={cc.imageOverlay}
+      />
+      {/* Content */}
+      <View style={cc.content}>
+        <Text style={cc.eyebrow}>CURRENT STATUS · LEVEL {tier.level}</Text>
+        <LinearGradient
+          colors={[P.goldDeep, P.gold, P.goldLight, P.gold, P.goldDeep]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+          style={cc.titleGrad}
+        >
+          <Text style={cc.title} numberOfLines={2}>{tier.names[city]}</Text>
+        </LinearGradient>
+        <Text style={cc.loc}>📍 {tier.locations[city]}</Text>
+
+        <View style={cc.statsRow}>
+          <View style={cc.stat}>
+            <Text style={cc.statLabel}>SOL</Text>
+            <Text style={[cc.statVal, { color: tier.color }]}>
+              {solBalance.toFixed(2)}
+            </Text>
+          </View>
+          <View style={cc.statDiv} />
+          <View style={cc.stat}>
+            <Text style={cc.statLabel}>VALUE</Text>
+            <Text style={cc.statVal}>
+              ${totalUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+            </Text>
+          </View>
+          <View style={cc.statDiv} />
+          <View style={cc.stat}>
+            <Text style={cc.statLabel}>RANK</Text>
+            <Text style={[cc.statVal, { color: P.goldLight, fontSize: 13 }]}>{percentile}</Text>
+          </View>
+        </View>
+
+        <Text style={cc.stars}>{starInfo?.starsDisplay ?? '★☆☆'}</Text>
+        <Text style={cc.narrative}>{tier.narratives[city]}</Text>
+      </View>
+    </View>
+  );
+};
+
+const cc = StyleSheet.create({
+  wrap: {
+    marginHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: P.gold,
+    overflow: 'hidden',
+    backgroundColor: P.dark,
+    shadowColor: P.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.4,
+    shadowRadius: 20,
+    elevation: 20,
+  },
+  accentTop: { height: 3, width: '100%' },
+  image: { width: '100%', height: 200, position: 'absolute', top: 3 },
+  imageOverlay: { height: 200, position: 'absolute', top: 3, left: 0, right: 0 },
+  content: { marginTop: 3 + 200 - 40, padding: 20 },
+  eyebrow: { fontSize: 9, color: P.gold, letterSpacing: 3, fontWeight: '600', marginBottom: 8 },
+  titleGrad: {
+    alignSelf: 'flex-start',
+    paddingHorizontal: 14,
+    paddingVertical: 6,
+    borderRadius: 6,
+    marginBottom: 8,
+  },
+  title: {
+    fontSize: 17,
+    fontWeight: '800',
+    color: P.black,
+    letterSpacing: 0.3,
+  },
+  loc:  { fontSize: 12, color: P.gray, marginBottom: 16 },
+  statsRow: {
+    flexDirection: 'row',
+    borderTopWidth: 1,
+    borderBottomWidth: 1,
+    borderColor: P.border,
+    paddingVertical: 14,
+    marginBottom: 16,
+  },
+  stat:    { flex: 1, alignItems: 'center' },
+  statLabel: { fontSize: 9, color: P.gray, letterSpacing: 2, marginBottom: 4 },
+  statVal:   { fontSize: 17, fontWeight: '700', color: P.offWhite },
+  statDiv:   { width: 1, backgroundColor: P.border },
+  stars:    { fontSize: 20, textAlign: 'center', marginBottom: 10, color: P.gold },
+  narrative: { fontSize: 13, color: P.gray, lineHeight: 20, textAlign: 'center', fontStyle: 'italic' },
+});
+
+// ── Progress Bar Section ──────────────────────────────────────────────────────
+const ProgressSection = ({ upgrade, city }) => {
+  if (!upgrade?.nextTier) {
+    return (
+      <View style={pg.wrap}>
+        <Text style={pg.maxText}>👑 Maximum Level Reached</Text>
+      </View>
+    );
+  }
+  const pct = Math.min(Math.max(upgrade.progress, 0), 99);
+  return (
+    <View style={pg.wrap}>
+      <Text style={pg.eyebrow}>PROGRESS TO NEXT LEVEL</Text>
+      <Text style={pg.nextName}>{upgrade.nextTier.names[city]}</Text>
+      <View style={pg.barBg}>
+        <LinearGradient
+          colors={[P.goldDeep, P.gold, P.goldLight]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+          style={[pg.barFill, { width: `${pct}%` }]}
+        />
+      </View>
+      <Text style={pg.pctText}>
+        {pct.toFixed(0)}% — need{' '}
+        {upgrade.solNeeded.toFixed(2)} more SOL (${upgrade.usdNeeded.toLocaleString(undefined, { maximumFractionDigits: 0 })})
+      </Text>
+      <TouchableOpacity style={pg.jupBtn} onPress={openJupiter}>
+        <LinearGradient
+          colors={[P.goldDeep, P.gold, P.goldLight]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+          style={pg.jupGrad}
+        >
+          <Text style={pg.jupText}>⚡ Upgrade via Jupiter</Text>
+        </LinearGradient>
+      </TouchableOpacity>
+    </View>
+  );
+};
+
+const pg = StyleSheet.create({
+  wrap: { marginHorizontal: 16, marginTop: 16, padding: 20, backgroundColor: P.dark, borderRadius: 16, borderWidth: 1, borderColor: P.border },
+  eyebrow: { fontSize: 9, color: P.gold, letterSpacing: 3, fontWeight: '600', marginBottom: 8 },
+  nextName: { fontSize: 17, fontWeight: '600', color: P.offWhite, marginBottom: 14 },
+  barBg:   { height: 8, backgroundColor: P.border, borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
+  barFill: { height: '100%', borderRadius: 4 },
+  pctText: { fontSize: 12, color: P.gray, marginBottom: 16 },
+  maxText: { fontSize: 18, color: P.goldLight, textAlign: 'center', fontWeight: '700' },
+  jupBtn:  { borderRadius: 12, overflow: 'hidden' },
+  jupGrad: { paddingVertical: 14, alignItems: 'center' },
+  jupText: { fontSize: 15, fontWeight: '800', color: P.black },
+});
+
+// ── Future Target Card (Next +1 and +2) ──────────────────────────────────────
+const FutureCard = ({ tier, city, mystery = false }) => {
+  if (!tier) return null;
+  const imgKey = tier.imageKey?.[city] ?? 'ny_level1';
+  return (
+    <View style={[fc.wrap, mystery && fc.wrapMystery]}>
+      <Image
+        source={getImage(imgKey)}
+        style={fc.image}
+        resizeMode="cover"
+        blurRadius={mystery ? 12 : 5}
+      />
+      <LinearGradient
+        colors={mystery
+          ? ['rgba(0,0,0,0.85)', 'rgba(0,0,0,0.95)']
+          : ['rgba(0,0,0,0.5)', 'rgba(0,0,0,0.75)']}
+        style={fc.overlay}
+      >
+        <Text style={fc.eyebrow}>
+          {mystery ? '🔒 FUTURE TARGET' : '🔮 NEXT LEVEL'}
+        </Text>
+        <Text style={[fc.name, mystery && { color: P.gray }]}>
+          {mystery ? '???  ' + tier.names[city].split(' ').slice(-2).join(' ') : tier.names[city]}
+        </Text>
+        <Text style={fc.loc}>
+          {mystery ? '📍 Unlocks at ' + tier.krwLabel : '📍 ' + tier.locations[city]}
+        </Text>
+        {!mystery && (
+          <View style={fc.reqRow}>
+            <Text style={fc.req}>{tier.minSOL.toLocaleString()} SOL</Text>
+            <Text style={fc.reqSep}> · </Text>
+            <Text style={fc.req}>{tier.krwLabel}</Text>
+          </View>
+        )}
+      </LinearGradient>
+    </View>
+  );
+};
+
+const fc = StyleSheet.create({
+  wrap: {
+    marginHorizontal: 16,
+    marginTop: 12,
+    height: 140,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: P.border,
+    overflow: 'hidden',
+  },
+  wrapMystery: { borderColor: '#1A1A1A', opacity: 0.7 },
+  image: { width: '100%', height: '100%', position: 'absolute' },
+  overlay: { flex: 1, justifyContent: 'flex-end', padding: 16 },
+  eyebrow: { fontSize: 9, color: P.gold, letterSpacing: 3, marginBottom: 4 },
+  name:    { fontSize: 16, fontWeight: '700', color: P.offWhite, marginBottom: 2 },
+  loc:     { fontSize: 11, color: P.gray, marginBottom: 6 },
+  reqRow:  { flexDirection: 'row' },
+  req:     { fontSize: 11, color: P.goldLight, fontWeight: '600' },
+  reqSep:  { fontSize: 11, color: P.gray },
+});
+
+// ── Not Connected Placeholder ─────────────────────────────────────────────────
+const EmptyState = () => (
+  <LinearGradient colors={[P.black, P.charcoal]} style={{ flex: 1 }}>
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center', padding: 48 }}>
+      <Text style={{ fontSize: 56, marginBottom: 20 }}>🏛️</Text>
+      <Text style={{ fontSize: 28, fontWeight: '300', color: P.offWhite, letterSpacing: 2, marginBottom: 12 }}>
+        Empire
+      </Text>
+      <Text style={{ fontSize: 14, color: P.gray, textAlign: 'center', lineHeight: 22 }}>
+        Connect your wallet to begin your vertical ascent.
+      </Text>
+    </View>
+  </LinearGradient>
+);
+
+// ── Main Screen ───────────────────────────────────────────────────────────────
 export default function OdysseyScreen() {
   const { walletAddress, balance, isConnected } = useWallet();
-  const [solPrice, setSolPrice]   = useState(139.8);
-  const [history, setHistory]     = useState([]);
+
+  const [city,        setCity]        = useState(CityType.MANHATTAN);
+  const [solPrice,    setSolPrice]    = useState(150);
   const [currentTier, setCurrentTier] = useState(null);
-  const [city, setCity]           = useState(CityType.MANHATTAN);
-  const [upgrade, setUpgrade]     = useState(null);
+  const [upgrade,     setUpgrade]     = useState(null);
+
+  const scrollRef = useRef(null);
 
   useEffect(() => {
     if (isConnected) loadData();
   }, [isConnected, balance, city]);
 
+  // Scroll to show peek of previous card on mount / data change
+  useEffect(() => {
+    if (currentTier && currentTier.level > 1) {
+      setTimeout(() => {
+        scrollRef.current?.scrollTo({ y: INITIAL_SCROLL, animated: false });
+      }, 100);
+    }
+  }, [currentTier]);
+
   const loadData = async () => {
     try {
       const prices = await priceDataService.fetchAllPrices(city);
-      const price = prices.solPrice || 139.8;
+      const price  = prices.solPrice || 150;
       setSolPrice(price);
 
-      const sol = balance || 2;
+      const sol    = balance || 2;
       const result = valueCalculator.determineMapping({ solAmount: sol, solPrice: price, cityType: city });
       setCurrentTier(result.tier);
 
-      const upgradeInfo = valueCalculator.calculateUpgrade({ solAmount: sol, solPrice: price, cityType: city });
-      setUpgrade(upgradeInfo);
-
-      // Load user history
-      const key = `history_${walletAddress}`;
-      const raw = await AsyncStorage.getItem(key);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        setHistory(parsed.slice(0, 20)); // Last 20 records
-      }
+      const up = valueCalculator.calculateUpgrade({ solAmount: sol, solPrice: price, cityType: city });
+      setUpgrade(up);
     } catch (e) {
-      console.error('Odyssey load failed:', e);
+      console.error('Empire load failed:', e);
     }
   };
 
-  if (!isConnected) {
-    return (
-      <LinearGradient colors={[P.black, P.charcoal]} style={s.flex}>
-        <View style={s.emptyWrap}>
-          <Text style={s.emptyEmoji}>📈</Text>
-          <Text style={s.emptyTitle}>Asset Odyssey</Text>
-          <Text style={s.emptyBody}>Connect your wallet to begin your journey.</Text>
-        </View>
-      </LinearGradient>
-    );
-  }
+  if (!isConnected) return <EmptyState />;
 
-  const totalUSD = (balance || 2) * solPrice;
+  const solBalance = balance || 2;
+
+  // Determine adjacent tiers
+  const currentIdx  = PROPERTY_TIERS.findIndex(t => t.id === currentTier?.id);
+  const prevTier    = currentIdx > 0 ? PROPERTY_TIERS[currentIdx - 1] : null;
+  const nextTier1   = PROPERTY_TIERS[currentIdx + 1] ?? null;
+  const nextTier2   = PROPERTY_TIERS[currentIdx + 2] ?? null;
 
   return (
-    <LinearGradient colors={[P.black, P.charcoal]} style={s.flex}>
-
-      {/* Header */}
+    <View style={s.root}>
+      {/* ─── Header + City Toggle ─────────────────────────────────────────── */}
       <LinearGradient colors={[P.charcoal, P.dark]} style={s.header}>
-        <Text style={s.eyebrow}>YOUR ASSET JOURNEY</Text>
-        <Text style={s.headerTitle}>Odyssey</Text>
-        {/* City Toggle */}
+        <Text style={s.headerEye}>YOUR VERTICAL ASCENT</Text>
+        <Text style={s.headerTitle}>Empire</Text>
         <View style={s.toggle}>
           {[CityType.MANHATTAN, CityType.DUBAI].map(c => (
             <TouchableOpacity
@@ -99,160 +423,91 @@ export default function OdysseyScreen() {
         </View>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={s.scroll}>
-
-        {/* Current Status Card */}
-        <LinearGradient
-          colors={[P.dark, '#1A150A']}
-          style={[s.card, { borderColor: currentTier?.color || P.gold }]}
-        >
-          <LinearGradient
-            colors={[P.goldDeep, P.gold, P.goldLight, P.gold, P.goldDeep]}
-            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-            style={s.accentLine}
-          />
-          <Text style={s.eyebrow}>CURRENT STATUS</Text>
-          <Text style={s.heroTitle}>{currentTier?.names[city]}</Text>
-          <Text style={s.heroLocation}>📍 {currentTier?.locations[city]}</Text>
-
-          <View style={s.statsRow}>
-            <View style={s.statItem}>
-              <Text style={s.statLabel}>LEVEL</Text>
-              <Text style={[s.statValue, { color: currentTier?.color }]}>{currentTier?.level || '?'} • {currentTier ? valueCalculator.calculateStarProgress(balance || 2, currentTier)?.starsDisplay : '★☆☆'}
-              </Text>
-            </View>
-            <View style={s.divider} />
-            <View style={s.statItem}>
-              <Text style={s.statLabel}>VALUE</Text>
-              <Text style={s.statValue}>
-                ${totalUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-              </Text>
-            </View>
-          </View>
-
-          <View style={s.narrativeWrap}>
-            <Text style={s.narrative}>{currentTier?.narratives[city]}</Text>
-          </View>
-        </LinearGradient>
-
-        {/* Upgrade Path */}
-        {upgrade && upgrade.nextTier && (
-          <LinearGradient
-            colors={[P.dark, P.charcoal]}
-            style={[s.card, { borderColor: P.gold }]}
-          >
-            <Text style={s.eyebrow}>NEXT MILESTONE</Text>
-            <Text style={s.upgradeTitle}>
-              {upgrade.nextTier.names[city]}
-            </Text>
-            <Text style={s.upgradeNeed}>
-              Need {upgrade.solNeeded.toFixed(2)} more SOL (${upgrade.usdNeeded.toLocaleString()})
-            </Text>
-
-            {/* Progress Bar */}
-            <View style={s.progressBg}>
-              <View style={[s.progressBar, { width: `${upgrade.progress}%` }]} />
-            </View>
-            <Text style={s.progressText}>{upgrade.progress.toFixed(0)}% to next tier</Text>
-
-            {/* Jupiter Button */}
-            <TouchableOpacity
-              style={s.jupiterBtn}
-              onPress={() => Linking.openURL('https://jup.ag/swap/USDC-SOL')}
-            >
-              <LinearGradient
-                colors={[P.goldDeep, P.gold, P.goldLight]}
-                start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-                style={s.jupiterGradient}
-              >
-                <Text style={s.jupiterText}>⚡ Upgrade with Jupiter</Text>
-              </LinearGradient>
-            </TouchableOpacity>
-          </LinearGradient>
+      {/* ─── Vertical Scroll: Past → Current (sticky) → Future ───────────── */}
+      <ScrollView
+        ref={scrollRef}
+        stickyHeaderIndices={prevTier ? [1] : [0]}
+        showsVerticalScrollIndicator={false}
+        style={s.scroll}
+        contentContainerStyle={s.scrollContent}
+      >
+        {/* B. Legacy Peek (index 0 if prevTier exists, else skipped) */}
+        {prevTier ? (
+          <PrevCard tier={prevTier} city={city} />
+        ) : (
+          /* Spacer so stickyHeaderIndices still works */
+          <View style={{ height: 8 }} />
         )}
 
-        {/* User History */}
-        <View style={s.section}>
-          {history.map((record, idx) => (
-              <LinearGradient
-                key={idx}
-                colors={[P.dark, P.charcoal]}
-                style={[s.historyCard, { borderColor: record.tier?.color || P.mid }]}
-              >
-                <View style={s.historyHeader}>
-                  <Text style={s.historyDate}>
-                    {new Date(record.timestamp).toLocaleDateString('en-US', {
-                      month: 'short', day: 'numeric', year: 'numeric',
-                    })}
-                  </Text>
-                  <Text style={[s.historyRarity, { color: record.tier?.color }]}>
-                    {record.tier?.rarity}
-                  </Text>
-                </View>
-                <Text style={s.historyName}>
-                  {record.tier?.names?.[city] || record.propertyName}
-                </Text>
-                <Text style={s.historyValue}>
-                  ${record.totalValue?.toLocaleString(undefined, { maximumFractionDigits: 0 })}
-                </Text>
-              </LinearGradient>
-            )
-          )}
+        {/* C. Current Hero — sticky (index 1 when prevTier, index 0 when not) */}
+        <View style={s.stickyWrap}>
+          <CurrentCard
+            tier={currentTier}
+            city={city}
+            solBalance={solBalance}
+            solPrice={solPrice}
+          />
         </View>
+
+        {/* D. Progress Section */}
+        <ProgressSection upgrade={upgrade} city={city} />
+
+        {/* ── "Future Targets" label */}
+        <View style={s.sectionLabel}>
+          <Text style={s.sectionEye}>FUTURE TARGETS</Text>
+        </View>
+
+        {/* E. Next +1 */}
+        {nextTier1 ? (
+          <FutureCard tier={nextTier1} city={city} mystery={false} />
+        ) : null}
+
+        {/* E. Next +2 (mysterious) */}
+        {nextTier2 ? (
+          <FutureCard tier={nextTier2} city={city} mystery />
+        ) : null}
 
         <View style={{ height: 60 }} />
       </ScrollView>
-    </LinearGradient>
+    </View>
   );
 }
 
 const s = StyleSheet.create({
-  flex: { flex: 1 },
+  root:   { flex: 1, backgroundColor: P.black },
   header: {
-    paddingTop: 60, paddingBottom: 20, paddingHorizontal: 24,
-    alignItems: 'center', borderBottomWidth: 1, borderBottomColor: P.gold,
+    paddingTop: 56,
+    paddingBottom: 16,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: P.gold,
   },
-  eyebrow: { fontSize: 10, color: P.gold, letterSpacing: 4, fontWeight: '600', marginBottom: 4 },
-  headerTitle: { fontSize: 22, color: P.offWhite, fontWeight: '300', letterSpacing: 1, marginBottom: 16 },
-  toggle: { flexDirection: 'row', backgroundColor: P.black, borderRadius: 12, padding: 3, borderWidth: 1, borderColor: P.mid },
-  toggleBtn: { paddingVertical: 8, paddingHorizontal: 20, borderRadius: 10 },
-  toggleActive: { backgroundColor: P.gold },
-  toggleText: { fontSize: 13, color: P.gray, fontWeight: '500' },
-  toggleTextActive: { color: P.black, fontWeight: '700' },
-  scroll: { padding: 16 },
+  headerEye:   { fontSize: 9, color: P.gold, letterSpacing: 4, fontWeight: '600', marginBottom: 4 },
+  headerTitle: { fontSize: 26, color: P.offWhite, fontWeight: '300', letterSpacing: 2, marginBottom: 14 },
 
-  card: { borderRadius: 20, borderWidth: 2, padding: 24, marginBottom: 16, overflow: 'hidden' },
-  accentLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 2 },
-  heroTitle: { fontSize: 28, fontWeight: '700', color: P.offWhite, letterSpacing: 0.5, marginBottom: 8, textAlign: 'center' },
-  heroLocation: { fontSize: 13, color: P.gray, marginBottom: 20, textAlign: 'center' },
-  statsRow: { flexDirection: 'row', justifyContent: 'space-around', paddingVertical: 16, borderTopWidth: 1, borderBottomWidth: 1, borderColor: P.mid },
-  statItem: { alignItems: 'center', flex: 1 },
-  statLabel: { fontSize: 10, color: P.gray, letterSpacing: 2, fontWeight: '600', marginBottom: 6 },
-  statValue: { fontSize: 20, fontWeight: '700', color: P.offWhite },
-  divider: { width: 1, backgroundColor: P.mid },
-  narrativeWrap: { marginTop: 20 },
-  narrative: { fontSize: 14, color: P.gray, lineHeight: 22, textAlign: 'center', letterSpacing: 0.3, fontStyle: 'italic' },
+  toggle: {
+    flexDirection: 'row',
+    backgroundColor: P.black,
+    borderRadius: 12,
+    padding: 3,
+    borderWidth: 1,
+    borderColor: P.border,
+  },
+  toggleBtn:       { paddingVertical: 8, paddingHorizontal: 22, borderRadius: 10 },
+  toggleActive:    { backgroundColor: P.gold },
+  toggleText:      { fontSize: 13, color: P.gray, fontWeight: '500' },
+  toggleTextActive:{ color: P.black, fontWeight: '800' },
 
-  upgradeTitle: { fontSize: 20, color: P.offWhite, fontWeight: '600', marginBottom: 8 },
-  upgradeNeed: { fontSize: 13, color: P.gray, marginBottom: 16 },
-  progressBg: { height: 8, backgroundColor: P.mid, borderRadius: 4, overflow: 'hidden', marginBottom: 8 },
-  progressBar: { height: '100%', backgroundColor: P.gold },
-  progressText: { fontSize: 11, color: P.gray, marginBottom: 16 },
-  jupiterBtn: { borderRadius: 12, overflow: 'hidden' },
-  jupiterGradient: { paddingVertical: 14, alignItems: 'center' },
-  jupiterText: { fontSize: 16, fontWeight: '700', color: P.black },
+  scroll:        { flex: 1 },
+  scrollContent: { paddingTop: 12, paddingBottom: 20 },
 
-  section: { marginTop: 24 },
-  sectionTitle: { fontSize: 16, color: P.offWhite, fontWeight: '300', letterSpacing: 0.5, marginBottom: 12 },
-  historyCard: { borderRadius: 12, borderWidth: 1, padding: 16, marginBottom: 8 },
-  historyHeader: { flexDirection: 'row', justifyContent: 'space-between', marginBottom: 8 },
-  historyDate: { fontSize: 11, color: P.gray },
-  historyRarity: { fontSize: 11, fontWeight: '600', letterSpacing: 1 },
-  historyName: { fontSize: 16, color: P.offWhite, fontWeight: '600', marginBottom: 4 },
-  historyValue: { fontSize: 14, color: P.gold, fontWeight: '600' },
+  stickyWrap: {
+    backgroundColor: P.black,
+    paddingVertical: 8,
+    paddingTop: 2,
+  },
 
-  emptyWrap: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 48 },
-  emptyEmoji: { fontSize: 56, marginBottom: 20 },
-  emptyTitle: { fontSize: 28, fontWeight: '300', color: P.offWhite, letterSpacing: 2, marginBottom: 12 },
-  emptyBody: { fontSize: 14, color: P.gray, textAlign: 'center', lineHeight: 22 },
+  sectionLabel: { marginHorizontal: 16, marginTop: 28, marginBottom: 4 },
+  sectionEye:   { fontSize: 9, color: P.gold, letterSpacing: 4, fontWeight: '600' },
 });

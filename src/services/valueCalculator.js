@@ -30,7 +30,9 @@ export const CITY_CONFIG = {
   },
 };
 
-// 10-Level Property System (1 SOL = $140 = ₩190,000)
+// (KRW removed — all values in USD based on real-time Solana price)
+
+// 10-Level Property System — aligned with spec KRW thresholds
 export const PROPERTY_TIERS = [
   {
     id: 'level1',
@@ -38,48 +40,50 @@ export const PROPERTY_TIERS = [
     minSOL: 1,
     maxSOL: 10,
     minUSD: 140,
-    maxUSD: 1400,
+    maxUSD: 1480,
+    krwLabel: '~₩2M',
     color: '#4A4A4A',
     names: {
-      MANHATTAN: 'The Urban Grid',
-      DUBAI: 'The Sand Plot',
+      MANHATTAN: 'The Urban Grid (Manhole)',
+      DUBAI: 'The Paving Stone (Marina)',
     },
     descriptions: {
-      MANHATTAN: 'Cybernetic golden manhole cover',
-      DUBAI: 'Holographic land boundary in desert',
+      MANHATTAN: 'A deeded manhole cover on the Lower Manhattan grid',
+      DUBAI: 'Your name etched in Marina Walk paving stone',
     },
     locations: {
       MANHATTAN: 'Lower Manhattan Infrastructure',
-      DUBAI: 'Desert Outskirts',
+      DUBAI: 'Dubai Marina Walk',
     },
     narratives: {
       MANHATTAN: 'Every empire begins beneath the surface.',
-      DUBAI: 'The desert holds infinite potential.',
+      DUBAI: 'The Marina waterfront — your first mark.',
     },
     imageKey: {
       MANHATTAN: 'ny_level1',
-      DUBAI: 'db_level1',
+      DUBAI: 'ny_level1',
     },
   },
   {
     id: 'level2',
     level: 2,
     minSOL: 10,
-    maxSOL: 50,
-    minUSD: 1400,
-    maxUSD: 7000,
+    maxSOL: 55,
+    minUSD: 1480,
+    maxUSD: 7400,
+    krwLabel: '~₩10M',
     color: '#5A5A5A',
     names: {
-      MANHATTAN: 'The Public Anchor',
-      DUBAI: 'The Lamp Post',
+      MANHATTAN: 'The Park Bench (Central Park)',
+      DUBAI: 'The Golden Smart Lamp',
     },
     descriptions: {
-      MANHATTAN: 'Artistic park bench with dark metal and gold',
-      DUBAI: 'Futuristic golden street lamp',
+      MANHATTAN: 'A deeded park bench in Central Park with a gold plaque',
+      DUBAI: 'A sponsored smart lamp on the Marina promenade',
     },
     locations: {
-      MANHATTAN: 'Central Park',
-      DUBAI: 'Dubai Marina',
+      MANHATTAN: 'Central Park, Manhattan',
+      DUBAI: 'Dubai Marina Promenade',
     },
     narratives: {
       MANHATTAN: 'A permanent mark in the city that never sleeps.',
@@ -87,24 +91,25 @@ export const PROPERTY_TIERS = [
     },
     imageKey: {
       MANHATTAN: 'ny_level2',
-      DUBAI: 'db_level2',
+      DUBAI: 'ny_level2',
     },
   },
   {
     id: 'level3',
     level: 3,
-    minSOL: 50,
-    maxSOL: 250,
-    minUSD: 7000,
-    maxUSD: 35000,
+    minSOL: 55,
+    maxSOL: 270,
+    minUSD: 7400,
+    maxUSD: 37000,
+    krwLabel: '~₩50M',
     color: '#6A6A6A',
     names: {
-      MANHATTAN: 'The Secure Vault',
-      DUBAI: 'The Prime Sector',
+      MANHATTAN: 'The Storage Vault (Deeded)',
+      DUBAI: 'The Private Parking Stall',
     },
     descriptions: {
-      MANHATTAN: 'High-tech golden storage vault',
-      DUBAI: 'Laser-marked premium parking zone',
+      MANHATTAN: 'A deeded underground storage vault in the Financial District',
+      DUBAI: 'A private deeded parking stall in Marina Bay',
     },
     locations: {
       MANHATTAN: 'Financial District',
@@ -116,86 +121,89 @@ export const PROPERTY_TIERS = [
     },
     imageKey: {
       MANHATTAN: 'ny_level3',
-      DUBAI: 'db_level3',
+      DUBAI: 'ny_level3',
     },
   },
   {
     id: 'level4',
     level: 4,
-    minSOL: 250,
-    maxSOL: 1250,
-    minUSD: 35000,
-    maxUSD: 175000,
+    minSOL: 270,
+    maxSOL: 1080,
+    minUSD: 37000,
+    maxUSD: 148000,
+    krwLabel: '~₩200M',
     color: '#7D7D7D',
     names: {
-      MANHATTAN: 'The Entry Studio',
-      DUBAI: 'The Smart Studio',
+      MANHATTAN: 'The Manhattan Parking Bay',
+      DUBAI: 'The Yacht Mooring Berth',
     },
     descriptions: {
-      MANHATTAN: 'Compact dark luxury room',
-      DUBAI: 'Minimalist smart studio',
-    },
-    locations: {
-      MANHATTAN: 'Brooklyn Heights',
-      DUBAI: 'Business Bay',
-    },
-    narratives: {
-      MANHATTAN: 'Your first real space in the concrete jungle.',
-      DUBAI: 'Modern living in the city of tomorrow.',
-    },
-    imageKey: {
-      MANHATTAN: 'ny_level4',
-      DUBAI: 'db_level4',
-    },
-  },
-  {
-    id: 'level5',
-    level: 5,
-    minSOL: 1250,
-    maxSOL: 3500,
-    minUSD: 175000,
-    maxUSD: 490000,
-    color: '#8F8F8F',
-    names: {
-      MANHATTAN: 'The Urban Suite',
-      DUBAI: 'The Marina One',
-    },
-    descriptions: {
-      MANHATTAN: 'Stylish midtown studio',
-      DUBAI: 'White & gold concept room',
+      MANHATTAN: 'A deeded indoor parking bay in Midtown Manhattan',
+      DUBAI: 'A private yacht mooring berth at the Dubai Marina',
     },
     locations: {
       MANHATTAN: 'Midtown Manhattan',
       DUBAI: 'Dubai Marina',
     },
     narratives: {
-      MANHATTAN: 'Refinement meets opportunity in the city center.',
-      DUBAI: 'Where luxury meets the sea.',
+      MANHATTAN: 'Your first real estate holding in the concrete jungle.',
+      DUBAI: 'Where the waterway meets your ambition.',
+    },
+    imageKey: {
+      MANHATTAN: 'ny_level4',
+      DUBAI: 'ny_level4',
+    },
+  },
+  {
+    id: 'level5',
+    level: 5,
+    minSOL: 1080,
+    maxSOL: 3240,
+    minUSD: 148000,
+    maxUSD: 444000,
+    krwLabel: '~₩600M',
+    color: '#8F8F8F',
+    names: {
+      MANHATTAN: 'The Entry Studio',
+      DUBAI: 'The Marina Sky Studio',
+    },
+    descriptions: {
+      MANHATTAN: 'Compact luxury studio in Brooklyn Heights',
+      DUBAI: 'High-floor minimalist studio with marina view',
+    },
+    locations: {
+      MANHATTAN: 'Brooklyn Heights',
+      DUBAI: 'Dubai Marina Sky',
+    },
+    narratives: {
+      MANHATTAN: 'Your first real space in the skyline.',
+      DUBAI: 'Modern living in the city of tomorrow.',
     },
     imageKey: {
       MANHATTAN: 'ny_level5',
-      DUBAI: 'db_level5',
+      DUBAI: 'ny_level5',
     },
   },
   {
     id: 'level6',
     level: 6,
-    minSOL: 3500,
-    maxSOL: 10000,
-    minUSD: 490000,
-    maxUSD: 1400000,
+    minSOL: 3240,
+    maxSOL: 8100,
+    minUSD: 444000,
+    maxUSD: 1110000,
+    krwLabel: '~₩1.5B',
     color: '#A8A8A8',
     names: {
-      MANHATTAN: 'The Prime Residence',
-      DUBAI: 'The High-rise Duo',
+      MANHATTAN: 'The Luxury 1-Bed Condo',
+      DUBAI: 'The Palm Sky Residence',
     },
     descriptions: {
-      MANHATTAN: 'Modern Chelsea living room',
-      DUBAI: 'Duplex high-rise with golden spiral',
+      MANHATTAN: 'Modern luxury 1-bedroom in Chelsea',
+      DUBAI: 'Sky-high Palm Jumeirah 1-bedroom residence',
     },
     locations: {
       MANHATTAN: 'Chelsea, Manhattan',
-      DUBAI: 'Downtown Dubai',
+      DUBAI: 'Palm Jumeirah Sky',
     },
     narratives: {
       MANHATTAN: 'You have arrived in the heart of culture.',
@@ -203,28 +211,29 @@ export const PROPERTY_TIERS = [
     },
     imageKey: {
       MANHATTAN: 'ny_level6',
-      DUBAI: 'db_level6',
+      DUBAI: 'ny_level6',
     },
   },
   {
     id: 'level7',
     level: 7,
-    minSOL: 10000,
-    maxSOL: 50000,
-    minUSD: 1400000,
-    maxUSD: 7000000,
+    minSOL: 8100,
+    maxSOL: 27000,
+    minUSD: 1110000,
+    maxUSD: 3700000,
+    krwLabel: '~₩5B',
     color: '#C0C0C0',
     names: {
-      MANHATTAN: 'The Soho Legacy',
-      DUBAI: 'The Palm View',
+      MANHATTAN: 'The Prime 2-Bed Residence',
+      DUBAI: 'The Palm Sea-view Suite',
     },
     descriptions: {
-      MANHATTAN: 'Classic red brick townhouse',
-      DUBAI: 'High-floor terrace overlooking Palm',
+      MANHATTAN: 'Spacious 2-bedroom SoHo loft with classic brickwork',
+      DUBAI: '2-bed suite with full Arabian Sea panorama on the Palm',
     },
     locations: {
       MANHATTAN: 'SoHo, Manhattan',
-      DUBAI: 'Palm Jumeirah',
+      DUBAI: 'Palm Jumeirah Frond',
     },
     narratives: {
       MANHATTAN: 'History and modernity converge under your ownership.',
@@ -232,28 +241,29 @@ export const PROPERTY_TIERS = [
     },
     imageKey: {
       MANHATTAN: 'ny_level7',
-      DUBAI: 'db_level7',
+      DUBAI: 'ny_level7',
     },
   },
   {
     id: 'level8',
     level: 8,
-    minSOL: 50000,
-    maxSOL: 150000,
-    minUSD: 7000000,
-    maxUSD: 21000000,
+    minSOL: 27000,
+    maxSOL: 81000,
+    minUSD: 3700000,
+    maxUSD: 11100000,
+    krwLabel: '~₩15B',
     color: '#D4AF37',
     names: {
-      MANHATTAN: 'The Townhouse',
-      DUBAI: 'The Beach Villa',
+      MANHATTAN: 'The Central Park Penthouse',
+      DUBAI: 'The Palm Frond Villa',
     },
     descriptions: {
-      MANHATTAN: 'Upper East Side mansion',
-      DUBAI: 'Beachfront villa with infinity pool',
+      MANHATTAN: 'Full-floor penthouse overlooking Central Park',
+      DUBAI: 'Private frond villa with infinity pool on the Palm',
     },
     locations: {
-      MANHATTAN: 'Upper East Side, Manhattan',
-      DUBAI: 'Jumeirah Beach',
+      MANHATTAN: 'Central Park South',
+      DUBAI: 'Palm Jumeirah Private Frond',
     },
     narratives: {
       MANHATTAN: 'Old money elegance, new world power.',
@@ -261,28 +271,29 @@ export const PROPERTY_TIERS = [
     },
     imageKey: {
       MANHATTAN: 'ny_level8',
-      DUBAI: 'db_level8',
+      DUBAI: 'ny_level8',
     },
   },
   {
     id: 'level9',
     level: 9,
-    minSOL: 150000,
-    maxSOL: 500000,
-    minUSD: 21000000,
-    maxUSD: 70000000,
+    minSOL: 81000,
+    maxSOL: 270000,
+    minUSD: 11100000,
+    maxUSD: 37000000,
+    krwLabel: '~₩50B',
     color: '#E8C96A',
     names: {
-      MANHATTAN: 'The Sky Mansion',
-      DUBAI: 'The Royal Manor',
+      MANHATTAN: 'The UES Townhouse',
+      DUBAI: 'The Emirates Hills Manor',
     },
     descriptions: {
-      MANHATTAN: 'Ultra high-rise penthouse',
-      DUBAI: 'Royal Atlantis-level sky mansion',
+      MANHATTAN: 'Historic multi-storey townhouse on the Upper East Side',
+      DUBAI: 'Grand manor estate in the Emirates Hills gated community',
     },
     locations: {
-      MANHATTAN: 'Billionaires Row, Manhattan',
-      DUBAI: 'Royal Atlantis',
+      MANHATTAN: 'Upper East Side, Manhattan',
+      DUBAI: 'Emirates Hills',
     },
     narratives: {
       MANHATTAN: 'You stand above the city, looking down on Central Park.',
@@ -290,28 +301,29 @@ export const PROPERTY_TIERS = [
     },
     imageKey: {
       MANHATTAN: 'ny_level9',
-      DUBAI: 'db_level9',
+      DUBAI: 'ny_level9',
     },
   },
   {
     id: 'level10',
     level: 10,
-    minSOL: 500000,
+    minSOL: 270000,
     maxSOL: Infinity,
-    minUSD: 70000000,
+    minUSD: 37000000,
     maxUSD: Infinity,
+    krwLabel: '₩50B+',
     color: '#FFD700',
     names: {
-      MANHATTAN: 'The Landmark',
-      DUBAI: 'The Sovereign Estate',
+      MANHATTAN: 'The Landmark Apex (Empire)',
+      DUBAI: 'The Sovereign Apex (Burj)',
     },
     descriptions: {
-      MANHATTAN: 'Empire State Building peak',
-      DUBAI: 'Royal palace commanding Dubai',
+      MANHATTAN: 'The pinnacle of Manhattan — your name on the skyline',
+      DUBAI: 'The crown jewel of the Burj Khalifa district',
     },
     locations: {
       MANHATTAN: 'Manhattan Landmark',
-      DUBAI: 'Dubai Royal District',
+      DUBAI: 'Burj Khalifa District',
     },
     narratives: {
       MANHATTAN: 'You are not just in New York. You ARE New York.',
@@ -319,7 +331,7 @@ export const PROPERTY_TIERS = [
     },
     imageKey: {
       MANHATTAN: 'ny_level10',
-      DUBAI: 'db_level10',
+      DUBAI: 'ny_level10',
     },
   },
 ];
@@ -376,7 +388,6 @@ class ValueCalculator {
     const starInfo = this.calculateStarProgress(solAmount, tier);
 
     const percentile = this.getPercentile(solAmount);
-    console.log("Percentile:", percentile);
     return {
       totalValue: totalUSD,
       cityType,

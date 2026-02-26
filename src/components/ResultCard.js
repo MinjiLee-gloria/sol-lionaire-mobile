@@ -5,7 +5,7 @@
 import React, { useRef } from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity } from 'react-native';
 import { captureRef } from 'react-native-view-shot';
-import Share from 'react-native-share';
+import { Share, Platform } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
 const P = {
@@ -42,8 +42,12 @@ const ResultCard = ({ mappingResult }) => {
   
   const handleShare = async () => {
     try {
+      if (Platform.OS === 'web') {
+        await Share.share({ message: 'Check out my Sol-lionaire status! 🏆' });
+        return;
+      }
       const uri = await captureRef(viewRef, { format: 'png', quality: 1 });
-      await Share.open({ url: `file://${uri}` });
+      await Share.share({ url: `file://${uri}`, message: 'Check out my Sol-lionaire status! 🏆' });
     } catch (e) {
       console.log('Share failed', e);
     }
@@ -54,8 +58,8 @@ const ResultCard = ({ mappingResult }) => {
   const { tier, level, propertyName, location, totalValue, sqm, narrative, starProgress, percentile } = mappingResult;
   const imageSource = tier.imageKey ? PROPERTY_IMAGES[tier.imageKey.MANHATTAN] : null;
   return (
-    <View ref={viewRef} collapsable={false}>
-      <LinearGradient
+    <View>
+      <LinearGradient ref={viewRef} collapsable={false}
         colors={[P.dark, P.charcoal]}
         style={[s.card, { borderColor: tier.color }]}
     >
@@ -99,12 +103,12 @@ const ResultCard = ({ mappingResult }) => {
 
       <View style={s.narrativeWrap}>
         <Text style={s.narrative}>{narrative}</Text>
-    </View>
-    <TouchableOpacity style={s.shareButton} onPress={handleShare}>
-      <Text style={s.shareText}>📤 Share My Status</Text>
-    </TouchableOpacity>
       </View>
-    </LinearGradient>
+      </LinearGradient>
+      <TouchableOpacity style={s.shareButton} onPress={handleShare}>
+        <Text style={s.shareText}>📤 Share My Status</Text>
+      </TouchableOpacity>
+    </View>
   );
 };
 

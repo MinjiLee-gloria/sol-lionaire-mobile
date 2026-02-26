@@ -1,16 +1,41 @@
 /**
- * More Screen - Sol-lionaire
- * Legal Disclaimer + Settings
+ * More Screen — Sol-lionaire
+ * Tab 3: Settings & Vault
+ *
+ *  - Wallet Management : address + disconnect
+ *  - App Config        : Language (KO/EN), Currency display, notifications
+ *  - Project Info      : Hackathon details, social links
+ *  - Legal Disclaimer
  */
-import React from 'react';
-import { View, Text, ScrollView, StyleSheet, Linking, TouchableOpacity } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View, Text, ScrollView, StyleSheet,
+  TouchableOpacity, Linking, Switch,
+} from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
+import { useWallet } from '../context/WalletContext';
+
+// ── Jupiter deep link: open app if installed, fall back to web ────────────────
+const JUP_WEB_URL = 'https://jup.ag/swap/USDC-SOL';
+const openJupiter = async () => {
+  try {
+    const canOpenApp = await Linking.canOpenURL('jup://');
+    if (canOpenApp) {
+      await Linking.openURL('jup://swap/USDC-SOL');
+    } else {
+      await Linking.openURL(JUP_WEB_URL);
+    }
+  } catch {
+    await Linking.openURL(JUP_WEB_URL);
+  }
+};
 
 const P = {
-  black:    '#0A0A0A',
-  charcoal: '#141414',
-  dark:     '#1C1C1C',
-  mid:      '#2A2A2A',
+  black:    '#000000',
+  charcoal: '#0A0A0A',
+  dark:     '#141414',
+  mid:      '#1C1C1C',
+  border:   '#2A2A2A',
   gray:     '#888888',
   offWhite: '#F5F0E8',
   gold:     '#C9A84C',
@@ -18,50 +43,157 @@ const P = {
   goldDeep: '#A07830',
 };
 
+// ── Reusable section wrapper ──────────────────────────────────────────────────
 const Section = ({ title, children }) => (
   <View style={s.section}>
     <Text style={s.eyebrow}>{title}</Text>
-    <LinearGradient colors={[P.dark, P.charcoal]} style={s.card}>
-      {children}
-    </LinearGradient>
+    <View style={s.card}>{children}</View>
   </View>
 );
 
-const Row = ({ label, value, onPress, isLast }) => (
+// ── Simple row ────────────────────────────────────────────────────────────────
+const Row = ({ label, value, onPress, isLast, danger }) => (
   <TouchableOpacity
     style={[s.row, !isLast && s.rowBorder]}
     onPress={onPress}
     disabled={!onPress}
     activeOpacity={onPress ? 0.6 : 1}
   >
-    <Text style={s.rowLabel}>{label}</Text>
-    <Text style={[s.rowValue, onPress && { color: P.gold }]}>{value}</Text>
+    <Text style={[s.rowLabel, danger && { color: '#FF6B6B' }]}>{label}</Text>
+    <Text style={[s.rowValue, onPress && !danger && { color: P.gold }]}>
+      {value}
+    </Text>
   </TouchableOpacity>
 );
 
+// ── Toggle row ────────────────────────────────────────────────────────────────
+const ToggleRow = ({ label, value, onToggle, isLast }) => (
+  <View style={[s.row, !isLast && s.rowBorder]}>
+    <Text style={s.rowLabel}>{label}</Text>
+    <Switch
+      value={value}
+      onValueChange={onToggle}
+      trackColor={{ false: P.border, true: P.goldDeep }}
+      thumbColor={value ? P.gold : P.gray}
+    />
+  </View>
+);
+
+// ── Segmented control row ─────────────────────────────────────────────────────
+const SegmentRow = ({ label, options, selected, onSelect, isLast }) => (
+  <View style={[s.row, !isLast && s.rowBorder]}>
+    <Text style={s.rowLabel}>{label}</Text>
+    <View style={s.segWrap}>
+      {options.map((opt, i) => (
+        <TouchableOpacity
+          key={opt}
+          style={[s.segBtn, selected === opt && s.segActive, i > 0 && { marginLeft: 4 }]}
+          onPress={() => onSelect(opt)}
+        >
+          <Text style={[s.segText, selected === opt && s.segTextActive]}>{opt}</Text>
+        </TouchableOpacity>
+      ))}
+    </View>
+  </View>
+);
+
+// ── Main Screen ───────────────────────────────────────────────────────────────
 export default function MoreScreen() {
+  const { walletAddress, isConnected, walletName, disconnectWallet } = useWallet();
+
+  const [language,    setLanguage]    = useState('EN');
+  const [notifOn,     setNotifOn]     = useState(false);
+
+  const shortAddr = walletAddress
+    ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-6)}`
+    : null;
+
   return (
     <LinearGradient colors={[P.black, P.charcoal]} style={s.flex}>
 
       {/* Header */}
       <LinearGradient colors={[P.charcoal, P.dark]} style={s.header}>
-        <Text style={s.eyebrow}>SETTINGS & LEGAL</Text>
+        <Text style={s.headerEye}>SETTINGS & VAULT</Text>
         <Text style={s.headerTitle}>More</Text>
       </LinearGradient>
 
-      <ScrollView contentContainerStyle={s.scroll}>
+      <ScrollView contentContainerStyle={s.scroll} showsVerticalScrollIndicator={false}>
 
-        {/* App Info */}
-        <Section title="APPLICATION">
-          <Row label="Version"        value="0.4.0 (Beta)" isLast={false} />
-          <Row label="Network"        value="Solana Devnet" isLast={false} />
-          <Row label="Price Oracle"   value="Pyth Network" isLast={false} />
-          <Row label="Swap Protocol"  value="Jupiter v6" isLast={true} />
+        {/* ── Wallet Management ─────────────────────────────────────────── */}
+        <Section title="WALLET">
+          {isConnected ? (
+            <>
+              <Row label="Provider"  value={walletName || 'Seed Vault'} isLast={false} />
+              <Row label="Address"   value={shortAddr}                   isLast={false} />
+              <Row
+                label="Disconnect"
+                value="→"
+                danger
+                onPress={disconnectWallet}
+                isLast
+              />
+            </>
+          ) : (
+            <Row label="Status" value="Not connected" isLast />
+          )}
         </Section>
 
-        {/* Legal Disclaimer */}
-        <Section title="LEGAL DISCLAIMER">
-          <View style={s.disclaimerWrap}>
+        {/* ── App Config ───────────────────────────────────────────────── */}
+        <Section title="APP CONFIG">
+          <SegmentRow
+            label="Language"
+            options={['EN', 'KO']}
+            selected={language}
+            onSelect={setLanguage}
+            isLast={false}
+          />
+          <ToggleRow
+            label="Notifications"
+            value={notifOn}
+            onToggle={setNotifOn}
+            isLast
+          />
+        </Section>
+
+        {/* ── App Info ─────────────────────────────────────────────────── */}
+        <Section title="APPLICATION">
+          <Row label="Version"       value="0.5.0 (Beta)" isLast={false} />
+          <Row label="Network"       value="Solana Mainnet" isLast={false} />
+          <Row label="Price Oracle"  value="Pyth Network"   isLast={false} />
+          <Row label="Swap Protocol" value="Jupiter v6"     isLast />
+        </Section>
+
+        {/* ── Project Info ─────────────────────────────────────────────── */}
+        <Section title="PROJECT">
+          <Row
+            label="Solana Monolith Hackathon"
+            value="View →"
+            onPress={() => Linking.openURL('https://solana.com')}
+            isLast={false}
+          />
+          <Row
+            label="Twitter / X"
+            value="Follow →"
+            onPress={() => Linking.openURL('https://x.com')}
+            isLast={false}
+          />
+          <Row
+            label="Jupiter Swap"
+            value="jup.ag →"
+            onPress={openJupiter}
+            isLast={false}
+          />
+          <Row
+            label="Pyth Network"
+            value="pyth.network →"
+            onPress={() => Linking.openURL('https://pyth.network')}
+            isLast
+          />
+        </Section>
+
+        {/* ── Legal ────────────────────────────────────────────────────── */}
+        <Section title="LEGAL">
+          <View style={s.disclaimer}>
             <LinearGradient
               colors={[P.goldDeep, P.gold, P.goldLight, P.gold, P.goldDeep]}
               start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
@@ -69,35 +201,11 @@ export default function MoreScreen() {
             />
             <Text style={s.disclaimerTitle}>Simulation Notice</Text>
             <Text style={s.disclaimerBody}>
-              Sol-lionaire is a visualization tool for entertainment only. All valuations are simulations and do not represent actual ownership or investment advice. Users are solely responsible for blockchain transactions and regulatory compliance.
+              Sol-lionaire is an entertainment visualization tool. All valuations are simulations
+              based on real-time SOL price and do not represent actual ownership or investment advice.
+              Real estate benchmarks: Manhattan $22,000/m², Dubai $7,500/m² (Feb 2024).
             </Text>
-            <Text style={s.disclaimerBody}>
-              Real estate valuations based on Feb 2024 market averages: Manhattan ($22,000/m²), Dubai ($7,500/m²).
-            </Text>
-            <View style={s.divider} />
           </View>
-
-        </Section>
-        {/* Links */}
-        <Section title="RESOURCES">
-          <Row
-            label="Solana"
-            value="solana.com →"
-            onPress={() => Linking.openURL('https://solana.com')}
-            isLast={false}
-          />
-          <Row
-            label="Pyth Network"
-            value="pyth.network →"
-            onPress={() => Linking.openURL('https://pyth.network')}
-            isLast={false}
-          />
-          <Row
-            label="Jupiter"
-            value="jup.ag →"
-            onPress={() => Linking.openURL('https://jup.ag')}
-            isLast={true}
-          />
         </Section>
 
         <View style={{ height: 60 }} />
@@ -107,42 +215,70 @@ export default function MoreScreen() {
 }
 
 const s = StyleSheet.create({
-  flex:       { flex: 1 },
+  flex: { flex: 1 },
+
   header: {
-    paddingTop: 60, paddingBottom: 20, paddingHorizontal: 24,
-    alignItems: 'center', borderBottomWidth: 1, borderBottomColor: P.gold,
+    paddingTop: 56,
+    paddingBottom: 20,
+    paddingHorizontal: 24,
+    alignItems: 'center',
+    borderBottomWidth: 1,
+    borderBottomColor: P.gold,
   },
-  eyebrow: { fontSize: 10, color: P.gold, letterSpacing: 4, fontWeight: '600', marginBottom: 4 },
-  headerTitle: { fontSize: 22, color: P.offWhite, fontWeight: '300', letterSpacing: 1 },
+  headerEye:   { fontSize: 9, color: P.gold, letterSpacing: 4, fontWeight: '600', marginBottom: 4 },
+  headerTitle: { fontSize: 26, color: P.offWhite, fontWeight: '300', letterSpacing: 2 },
+
   scroll: { padding: 16 },
 
-  section: { marginBottom: 24 },
+  section:  { marginBottom: 24 },
+  eyebrow:  { fontSize: 9, color: P.gold, letterSpacing: 4, fontWeight: '600', marginBottom: 8 },
   card: {
-    borderRadius: 16, borderWidth: 1,
-    borderColor: '#2A2A2A', overflow: 'hidden',
+    backgroundColor: P.mid,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: P.border,
+    overflow: 'hidden',
   },
 
   row: {
-    flexDirection: 'row', justifyContent: 'space-between',
-    alignItems: 'center', paddingVertical: 14, paddingHorizontal: 16,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 14,
+    paddingHorizontal: 16,
   },
-  rowBorder: { borderBottomWidth: 1, borderBottomColor: P.mid },
-  rowLabel: { fontSize: 14, color: P.offWhite },
-  rowValue: { fontSize: 13, color: P.gray },
+  rowBorder: { borderBottomWidth: 1, borderBottomColor: P.border },
+  rowLabel:  { fontSize: 14, color: P.offWhite, flex: 1 },
+  rowValue:  { fontSize: 13, color: P.gray },
 
-  disclaimerWrap: { padding: 20, position: 'relative', overflow: 'hidden' },
-  accentLine: { position: 'absolute', top: 0, left: 0, right: 0, height: 2 },
+  // Segment control
+  segWrap: { flexDirection: 'row' },
+  segBtn: {
+    paddingHorizontal: 12,
+    paddingVertical: 5,
+    borderRadius: 8,
+    borderWidth: 1,
+    borderColor: P.border,
+    backgroundColor: P.dark,
+  },
+  segActive:     { backgroundColor: P.gold, borderColor: P.gold },
+  segText:       { fontSize: 12, color: P.gray, fontWeight: '600' },
+  segTextActive: { color: P.black },
+
+  // Disclaimer
+  disclaimer: {
+    padding: 20,
+    position: 'relative',
+    overflow: 'hidden',
+  },
+  accentLine:      { position: 'absolute', top: 0, left: 0, right: 0, height: 2 },
   disclaimerTitle: {
-    fontSize: 16, color: P.gold, fontWeight: '600',
-    letterSpacing: 0.5, marginBottom: 8, marginTop: 8,
+    fontSize: 14,
+    color: P.gold,
+    fontWeight: '600',
+    letterSpacing: 0.5,
+    marginBottom: 8,
+    marginTop: 6,
   },
-  disclaimerHeading: {
-    fontSize: 13, color: P.offWhite, fontWeight: '600',
-    letterSpacing: 0.3, marginBottom: 6,
-  },
-  disclaimerBody: {
-    fontSize: 12, color: P.gray, lineHeight: 20,
-    letterSpacing: 0.2, marginBottom: 4,
-  },
-  divider: { height: 1, backgroundColor: P.mid, marginVertical: 14 },
+  disclaimerBody:  { fontSize: 12, color: P.gray, lineHeight: 20 },
 });

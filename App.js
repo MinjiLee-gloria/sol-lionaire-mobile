@@ -7,7 +7,6 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import HomeScreen from './src/screens/HomeScreen';
 import OdysseyScreen from './src/screens/OdysseyScreen';
-import AssetsScreen from './src/screens/AssetsScreen';
 import MoreScreen from './src/screens/MoreScreen';
 
 import { WalletProvider } from './src/context/WalletContext';
@@ -41,19 +40,11 @@ export default function App() {
               }}
             />
             <Tab.Screen
-              name="Odyssey"
+              name="Empire"
               component={OdysseyScreen}
               options={{
-                tabBarLabel: 'Odyssey',
-                tabBarIcon: ({ focused }) => <TabIcon emoji="📈" focused={focused} />,
-              }}
-            />
-            <Tab.Screen
-              name="Assets"
-              component={AssetsScreen}
-              options={{
-                tabBarLabel: 'Assets',
-                tabBarIcon: ({ focused }) => <TabIcon emoji="🎨" focused={focused} />,
+                tabBarLabel: 'Empire',
+                tabBarIcon: ({ focused }) => <TabIcon emoji="🏛️" focused={focused} />,
               }}
             />
             <Tab.Screen
