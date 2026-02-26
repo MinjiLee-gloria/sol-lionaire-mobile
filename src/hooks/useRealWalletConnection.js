@@ -6,7 +6,7 @@ import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { transact } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
 import { Platform } from 'react-native';
 
-const SOLANA_RPC = 'https://api.devnet.solana.com';
+const SOLANA_RPC = 'https://api.mainnet-beta.solana.com';
 const APP_IDENTITY = {
   name: 'Sol-lionaire',
   uri: 'https://sol-lionaire.app',
@@ -50,7 +50,7 @@ export const useRealWalletConnection = () => {
 
         const { publicKey, authToken: token } = await transact(async (wallet) => {
           const authResult = await wallet.authorize({
-            cluster: 'devnet',
+            cluster: 'mainnet-beta',
             identity: APP_IDENTITY,
           });
           return {
@@ -111,7 +111,7 @@ export const useRealWalletConnection = () => {
       if (Platform.OS === 'android' && authToken) {
         return await transact(async (wallet) => {
           await wallet.authorize({
-            cluster: 'devnet',
+            cluster: 'mainnet-beta',
             identity: APP_IDENTITY,
             auth_token: authToken,
           });

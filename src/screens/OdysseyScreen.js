@@ -19,6 +19,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useWallet } from '../context/WalletContext';
 import { valueCalculator, PROPERTY_TIERS, CityType } from '../services/valueCalculator';
 import { priceDataService } from '../services/pythPriceService';
+import { buildClaimTransaction, getExplorerUrl } from '../services/claimService';
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -339,6 +340,110 @@ const fc = StyleSheet.create({
   reqSep:  { fontSize: 11, color: P.gray },
 });
 
+// ── Claim My Territory ────────────────────────────────────────────────────────
+const ClaimSection = ({ tier, city, walletAddress, signAndSendTransaction }) => {
+  const [status, setStatus] = useState('idle'); // idle | claiming | success | error
+  const [txSig,  setTxSig]  = useState(null);
+
+  const handleClaim = async () => {
+    setStatus('claiming');
+    try {
+      const tx  = buildClaimTransaction({ tier, city, walletAddress });
+      const sig = await signAndSendTransaction(tx);
+      setTxSig(sig);
+      setStatus('success');
+    } catch (e) {
+      console.error('Claim failed:', e);
+      setStatus('error');
+    }
+  };
+
+  if (status === 'success') {
+    return (
+      <View style={cl.wrap}>
+        <LinearGradient
+          colors={[P.goldDeep, P.gold, P.goldLight, P.gold, P.goldDeep]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+          style={cl.accentLine}
+        />
+        <Text style={cl.successEye}>ON-CHAIN VERIFIED</Text>
+        <Text style={cl.successTitle}>Territory Claimed</Text>
+        <Text style={cl.successSub}>
+          Level {tier.level} · {tier.names[city]}{'\n'}recorded on Solana Mainnet
+        </Text>
+        <TouchableOpacity
+          style={cl.explorerBtn}
+          onPress={() => Linking.openURL(getExplorerUrl(txSig))}
+        >
+          <Text style={cl.explorerText}>View on Explorer →</Text>
+        </TouchableOpacity>
+      </View>
+    );
+  }
+
+  return (
+    <View style={cl.wrap}>
+      <LinearGradient
+        colors={[P.goldDeep, P.gold, P.goldLight, P.gold, P.goldDeep]}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+        style={cl.accentLine}
+      />
+      <Text style={cl.eye}>BLOCKCHAIN PROOF</Text>
+      <Text style={cl.title}>Claim My Territory</Text>
+      <Text style={cl.sub}>
+        Sign a transaction to record{'\n'}Level {tier.level} on Solana Mainnet
+      </Text>
+      <TouchableOpacity
+        style={cl.btn}
+        onPress={handleClaim}
+        disabled={status === 'claiming'}
+        activeOpacity={0.85}
+      >
+        <LinearGradient
+          colors={[P.goldDeep, P.gold, P.goldLight, P.gold, P.goldDeep]}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+          style={cl.btnGrad}
+        >
+          <Text style={cl.btnText}>
+            {status === 'claiming' ? 'Signing…' : 'Claim My Territory'}
+          </Text>
+        </LinearGradient>
+      </TouchableOpacity>
+      <Text style={cl.hint}>~0.000005 SOL network fee</Text>
+      {status === 'error' && (
+        <Text style={cl.errText}>Transaction failed — please try again</Text>
+      )}
+    </View>
+  );
+};
+
+const cl = StyleSheet.create({
+  wrap: {
+    marginHorizontal: 16,
+    marginTop: 16,
+    padding: 20,
+    backgroundColor: P.dark,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: P.border,
+  },
+  accentLine: { height: 2, borderRadius: 1, marginBottom: 16 },
+  eye:  { fontSize: 9, color: P.gold, letterSpacing: 3, fontWeight: '600', marginBottom: 8 },
+  title: { fontSize: 20, fontWeight: '700', color: P.offWhite, marginBottom: 6 },
+  sub:  { fontSize: 13, color: P.gray, lineHeight: 20, marginBottom: 20 },
+  btn:  { borderRadius: 12, overflow: 'hidden' },
+  btnGrad: { paddingVertical: 14, alignItems: 'center' },
+  btnText: { fontSize: 15, fontWeight: '800', color: P.black, letterSpacing: 0.5 },
+  hint:    { fontSize: 11, color: P.border, textAlign: 'center', marginTop: 10 },
+  errText: { fontSize: 12, color: '#FF6B6B', textAlign: 'center', marginTop: 8 },
+  // success state
+  successEye:   { fontSize: 9, color: P.goldLight, letterSpacing: 3, fontWeight: '600', marginBottom: 8 },
+  successTitle: { fontSize: 20, fontWeight: '700', color: P.goldLight, marginBottom: 8 },
+  successSub:   { fontSize: 13, color: P.gray, lineHeight: 20, marginBottom: 16 },
+  explorerBtn:  { alignSelf: 'flex-start' },
+  explorerText: { fontSize: 14, color: P.gold, fontWeight: '600' },
+});
+
 // ── Not Connected Placeholder ─────────────────────────────────────────────────
 const EmptyState = () => (
   <LinearGradient colors={[P.black, P.charcoal]} style={{ flex: 1 }}>
@@ -356,7 +461,7 @@ const EmptyState = () => (
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export default function OdysseyScreen() {
-  const { walletAddress, balance, isConnected } = useWallet();
+  const { walletAddress, balance, isConnected, signAndSendTransaction } = useWallet();
 
   const [city,        setCity]        = useState(CityType.MANHATTAN);
   const [solPrice,    setSolPrice]    = useState(0);
@@ -397,7 +502,7 @@ export default function OdysseyScreen() {
 
   if (!isConnected) return <EmptyState />;
 
-  const solBalance = balance || 2;
+  const solBalance = balance || 0;
 
   // Determine adjacent tiers
   const currentIdx  = PROPERTY_TIERS.findIndex(t => t.id === currentTier?.id);
@@ -454,6 +559,16 @@ export default function OdysseyScreen() {
 
         {/* D. Progress Section */}
         <ProgressSection upgrade={upgrade} city={city} />
+
+        {/* D2. Claim My Territory — on-chain proof */}
+        {currentTier && (
+          <ClaimSection
+            tier={currentTier}
+            city={city}
+            walletAddress={walletAddress}
+            signAndSendTransaction={signAndSendTransaction}
+          />
+        )}
 
         {/* ── "Future Targets" label */}
         <View style={s.sectionLabel}>
