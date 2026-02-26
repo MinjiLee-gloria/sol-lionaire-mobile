@@ -191,6 +191,11 @@ export default function HomeScreen() {
   const [showPicker,    setShowPicker]    = useState(false);
 
 
+  // Clear result immediately when wallet disconnects (also handles async race)
+  useEffect(() => {
+    if (!isConnected) setMappingResult(null);
+  }, [isConnected]);
+
   // Auto-calculate on connect or city change
   useEffect(() => {
     if (isConnected && balance !== null) {
@@ -282,10 +287,10 @@ export default function HomeScreen() {
   const solBalance = balance || 0;
   const totalUSD   = solBalance * solPrice;
 
-  const tier      = mappingResult?.tier;
+  const tier      = (isConnected && mappingResult) ? mappingResult.tier : null;
   const imageKey  = tier?.imageKey?.[selectedCity] ?? 'ny_level1';
   const levelNum  = tier?.level ?? null;
-  const titleText = mappingResult
+  const titleText = (isConnected && mappingResult)
     ? `Level ${levelNum}: ${mappingResult.propertyName}`
     : 'Connect your wallet';
 
@@ -339,7 +344,7 @@ export default function HomeScreen() {
           )}
 
           {/* Percentile badge */}
-          {mappingResult?.percentile && (
+          {isConnected && mappingResult?.percentile && (
             <View style={s.percentileBadge}>
               <Text style={s.percentileText}>{mappingResult.percentile} of SOL Holders</Text>
             </View>
