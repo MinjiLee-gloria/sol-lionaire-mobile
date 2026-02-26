@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert } from 'react-native';
+import { View, Text, TouchableOpacity, StyleSheet, ActivityIndicator, Alert, Linking } from 'react-native';
 import { nftMinter, createNFTMetadata } from '../services/nftMinter';
 
 /**
@@ -50,8 +50,7 @@ export const MintButton = ({
         `Your territory is now permanently yours!\n\nNFT ID: ${result.nftId.slice(0, 16)}...`,
         [
           { text: 'View on Explorer', onPress: () => {
-            // TODO: Open browser
-            console.log('Open:', result.explorerUrl);
+            if (result.explorerUrl) Linking.openURL(result.explorerUrl);
           }},
           { text: 'OK' }
         ]

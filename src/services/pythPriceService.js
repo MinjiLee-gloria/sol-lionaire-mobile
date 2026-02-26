@@ -2,7 +2,7 @@
  * Price Data Service - Sol-lionaire
  *
  * SOL/USD: CoinGecko public API (no key required, real-time)
- * Fallback: last known price → last resort hardcoded ~$87
+ * Fallback: last known price → 0 (shows "--" in UI rather than wrong price)
  */
 
 const COINGECKO_URL =
@@ -46,14 +46,17 @@ class PriceDataService {
     } catch (error) {
       console.error('❌ CoinGecko fetch failed:', error);
       // Return last cached value if available, otherwise fallback
-      return this.cache.solPrice || 87;
+      return this.cache.solPrice || 0;
     }
   }
 
   async fetchPricePerSqm(cityType) {
+    // Real estate benchmarks (premium residential, Q1 2026)
+    // Manhattan: ~$23,000/m² (condo avg, Miller Samuel Q4 2025 ×10.764)
+    // Dubai: ~$9,000/m² (premium areas avg, 2026)
     const basePrices = {
-      MANHATTAN: 22000,
-      DUBAI: 7500,
+      MANHATTAN: 23000,
+      DUBAI: 9000,
     };
     return basePrices[cityType] ?? 10000;
   }

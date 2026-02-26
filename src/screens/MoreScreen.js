@@ -203,7 +203,7 @@ export default function MoreScreen() {
             <Text style={s.disclaimerBody}>
               Sol-lionaire is an entertainment visualization tool. All valuations are simulations
               based on real-time SOL price and do not represent actual ownership or investment advice.
-              Real estate benchmarks: Manhattan $22,000/m², Dubai $7,500/m² (Feb 2024).
+              Real estate benchmarks: Manhattan $23,000/m², Dubai $9,000/m² (Q1 2026).
             </Text>
           </View>
         </Section>

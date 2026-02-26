@@ -381,7 +381,7 @@ export default function OdysseyScreen() {
       const price  = prices.solPrice || 0;
       setSolPrice(price);
 
-      const sol    = balance || 2;
+      const sol    = balance || 0;
       const result = valueCalculator.determineMapping({ solAmount: sol, solPrice: price, cityType: city });
       setCurrentTier(result.tier);
 
