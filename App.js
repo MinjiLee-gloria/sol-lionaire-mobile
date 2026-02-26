@@ -8,6 +8,7 @@ import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import HomeScreen from './src/screens/HomeScreen';
 import OdysseyScreen from './src/screens/OdysseyScreen';
+import DistrictScreen from './src/screens/DistrictScreen';
 import MoreScreen from './src/screens/MoreScreen';
 
 import { WalletProvider } from './src/context/WalletContext';
@@ -46,6 +47,16 @@ export default function App() {
                 tabBarLabel: 'Empire',
                 tabBarIcon: ({ color, focused }) => (
                   <Ionicons name={focused ? 'business' : 'business-outline'} size={22} color={color} />
+                ),
+              }}
+            />
+            <Tab.Screen
+              name="District"
+              component={DistrictScreen}
+              options={{
+                tabBarLabel: 'District',
+                tabBarIcon: ({ color, focused }) => (
+                  <Ionicons name={focused ? 'people' : 'people-outline'} size={22} color={color} />
                 ),
               }}
             />
