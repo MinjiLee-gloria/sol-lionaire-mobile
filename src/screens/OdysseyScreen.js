@@ -444,6 +444,103 @@ const cl = StyleSheet.create({
   explorerText: { fontSize: 14, color: P.gold, fontWeight: '600' },
 });
 
+// ── The High Table (Tier-gated Community) ────────────────────────────────────
+const HighTableSection = ({ currentLevel }) => {
+  const isUnlocked = currentLevel >= 6;
+
+  return (
+    <View style={[ht.wrap, !isUnlocked && ht.wrapLocked]}>
+      <LinearGradient
+        colors={isUnlocked
+          ? [P.goldDeep, P.gold, P.goldLight, P.gold, P.goldDeep]
+          : ['#2A2A2A', '#333333', '#2A2A2A']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+        style={ht.accentLine}
+      />
+
+      <Text style={[ht.eye, !isUnlocked && ht.eyeLocked]}>
+        {isUnlocked ? 'EXCLUSIVE ACCESS' : 'MEMBERS ONLY'}
+      </Text>
+      <Text style={[ht.title, !isUnlocked && ht.titleLocked]}>
+        The High Table
+      </Text>
+
+      {isUnlocked ? (
+        <>
+          <Text style={ht.desc}>
+            You have proven your sovereignty.{'\n'}Welcome to the inner circle.
+          </Text>
+          <View style={ht.badgeRow}>
+            <LinearGradient
+              colors={[P.goldDeep, P.gold, P.goldLight]}
+              start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+              style={ht.badge}
+            >
+              <Text style={ht.badgeText}>◆  HIGH TABLE  MEMBER</Text>
+            </LinearGradient>
+          </View>
+          <Text style={ht.memberNote}>Elite SOL holders · Level 6+</Text>
+        </>
+      ) : (
+        <>
+          <Text style={ht.lockedDesc}>
+            An exclusive network for proven SOL sovereigns.{'\n'}
+            Reserved for those who have ascended.
+          </Text>
+          <Text style={ht.requireLabel}>UNLOCK REQUIREMENT</Text>
+          <View style={ht.reqBadge}>
+            <Text style={ht.reqBadgeText}>Level 6 · 3,240 SOL · ~$444K</Text>
+          </View>
+        </>
+      )}
+    </View>
+  );
+};
+
+const ht = StyleSheet.create({
+  wrap: {
+    marginHorizontal: 16,
+    marginTop: 28,
+    padding: 20,
+    backgroundColor: P.dark,
+    borderRadius: 16,
+    borderWidth: 1,
+    borderColor: P.gold,
+    shadowColor: P.gold,
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 0.25,
+    shadowRadius: 12,
+    elevation: 8,
+  },
+  wrapLocked: {
+    borderColor: P.border,
+    opacity: 0.55,
+    shadowOpacity: 0,
+    elevation: 0,
+  },
+  accentLine:  { height: 2, borderRadius: 1, marginBottom: 16 },
+  eye:         { fontSize: 9, color: P.gold, letterSpacing: 3, fontWeight: '600', marginBottom: 8 },
+  eyeLocked:   { color: P.gray },
+  title:       { fontSize: 22, fontWeight: '700', color: P.offWhite, marginBottom: 10 },
+  titleLocked: { color: P.gray },
+  desc:        { fontSize: 13, color: P.gray, lineHeight: 20, marginBottom: 20 },
+  badgeRow:    { alignItems: 'flex-start', marginBottom: 12 },
+  badge:       { borderRadius: 8, paddingHorizontal: 16, paddingVertical: 8 },
+  badgeText:   { fontSize: 12, fontWeight: '800', color: P.black, letterSpacing: 2 },
+  memberNote:  { fontSize: 11, color: P.border, marginTop: 4 },
+  lockedDesc:  { fontSize: 13, color: P.gray, lineHeight: 20, marginBottom: 16 },
+  requireLabel: { fontSize: 9, color: P.gray, letterSpacing: 3, fontWeight: '600', marginBottom: 8 },
+  reqBadge: {
+    borderWidth: 1,
+    borderColor: P.border,
+    borderRadius: 8,
+    paddingHorizontal: 14,
+    paddingVertical: 8,
+    alignSelf: 'flex-start',
+  },
+  reqBadgeText: { fontSize: 12, color: P.gray, fontWeight: '600' },
+});
+
 // ── Not Connected Placeholder ─────────────────────────────────────────────────
 const EmptyState = () => (
   <LinearGradient colors={[P.black, P.charcoal]} style={{ flex: 1 }}>
@@ -584,6 +681,14 @@ export default function OdysseyScreen() {
         {nextTier2 ? (
           <FutureCard tier={nextTier2} city={city} mystery />
         ) : null}
+
+        {/* F. The High Table — tier-gated community */}
+        <View style={s.sectionLabel}>
+          <Text style={s.sectionEye}>THE HIGH TABLE</Text>
+        </View>
+        {currentTier && (
+          <HighTableSection currentLevel={currentTier.level} />
+        )}
 
         <View style={{ height: 60 }} />
       </ScrollView>
