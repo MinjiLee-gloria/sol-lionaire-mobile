@@ -1,7 +1,7 @@
 import { Buffer } from 'buffer';
 global.Buffer = Buffer;
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useRef } from 'react';
 import { Connection, PublicKey, LAMPORTS_PER_SOL } from '@solana/web3.js';
 import { transact } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
 import { Platform } from 'react-native';
@@ -33,7 +33,9 @@ export const useRealWalletConnection = () => {
   const [walletName, setWalletName]       = useState(null);
   const [authToken, setAuthToken]         = useState(null);
 
-  const connection = new Connection(SOLANA_RPC, 'confirmed');
+  // useRef: single Connection instance for the lifetime of the hook
+  const connectionRef = useRef(new Connection(SOLANA_RPC, 'confirmed'));
+  const connection = connectionRef.current;
 
   // 잔액 조회 - 별도로 비동기 실행 (연결 블로킹 안 함)
   const fetchBalance = async (pubkeyStr) => {

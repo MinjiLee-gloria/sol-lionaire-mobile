@@ -20,7 +20,7 @@ import * as Sharing from 'expo-sharing';
 import { Share } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useWallet } from '../context/WalletContext';
-import { valueCalculator, CityType, PROPERTY_TIERS } from '../services/valueCalculator';
+import { valueCalculator, CityType } from '../services/valueCalculator';
 import { priceDataService } from '../services/pythPriceService';
 import CalculatingAnimation from '../components/CalculatingAnimation';
 
@@ -40,7 +40,7 @@ const P = {
   goldGlow: 'rgba(201,168,76,0.35)',
 };
 
-// Property images (NYC only for now)
+// Property images — NYC (ny_) and Dubai (db_)
 const PROPERTY_IMAGES = {
   ny_level1:  require('../../assets/images/properties/ny_level1.png'),
   ny_level2:  require('../../assets/images/properties/ny_level2.png'),
@@ -278,11 +278,14 @@ export default function HomeScreen() {
       } else {
         // Fallback: text share
         const usdVal = totalUSD.toLocaleString(undefined, { maximumFractionDigits: 0 });
+        const percentileStr = (mappingResult?.percentile && mappingResult.percentile !== 'Newcomer')
+          ? `🏆 ${mappingResult.percentile} of SOL Holders\n`
+          : '';
         await Share.share({
           message:
             `🏛️ Sol-lionaire — Level ${levelNum}: ${mappingResult?.propertyName}\n` +
             `💰 ${solBalance.toFixed(4)} SOL ≈ $${usdVal}\n` +
-            `🏆 ${mappingResult?.percentile ?? ''} of SOL Holders\n` +
+            percentileStr +
             `Claim your piece of the Skyline 👑`,
         });
       }
