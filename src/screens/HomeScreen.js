@@ -235,11 +235,12 @@ export default function HomeScreen() {
     if (!isConnected) { setShowPicker(true); return; }
     setIsCalculating(true);
     try {
-      await loadPrices();
+      // Single fetch — result reused for both state update and calculation
       const prices = await priceDataService.fetchAllPrices(selectedCity);
+      setSolPrice(prices.solPrice || 0);
       const result = valueCalculator.determineMapping({
         solAmount: balance || 0,
-        solPrice:  prices.solPrice,
+        solPrice:  prices.solPrice || 0,
         cityType:  selectedCity,
       });
       await new Promise(r => setTimeout(r, 800));
@@ -300,9 +301,8 @@ export default function HomeScreen() {
   const tier      = (isConnected && mappingResult) ? mappingResult.tier : null;
   const imageKey  = tier?.imageKey?.[selectedCity] ?? 'ny_level1';
   const levelNum  = tier?.level ?? null;
-  const titleText = (isConnected && mappingResult)
-    ? `Level ${levelNum}: ${mappingResult.propertyName}`
-    : 'Connect your wallet';
+  // titleText only ever rendered inside {isConnected && mappingResult && ...}
+  const titleText = `Level ${levelNum}: ${mappingResult?.propertyName ?? ''}`;
 
   return (
     <View style={s.root}>
@@ -369,7 +369,9 @@ export default function HomeScreen() {
                 {solBalance.toFixed(4)} <Text style={s.balanceSOLUnit}>SOL</Text>
               </Text>
               <Text style={s.balanceUSD}>
-                ≈ ${totalUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+                {solPrice > 0
+                  ? `≈ $${totalUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                  : '≈ ---'}
               </Text>
               {/* Wallet tag */}
               <View style={s.walletTag}>

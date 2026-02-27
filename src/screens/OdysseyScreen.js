@@ -11,12 +11,11 @@
  */
 import React, { useState, useEffect, useRef } from 'react';
 import {
-  View, Text, ScrollView, StyleSheet, Animated,
+  View, Text, ScrollView, StyleSheet,
   TouchableOpacity, Image, Dimensions, Linking, ActivityIndicator,
 } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useWallet } from '../context/WalletContext';
 import { valueCalculator, PROPERTY_TIERS, CityType } from '../services/valueCalculator';
 import { priceDataService } from '../services/pythPriceService';
@@ -170,7 +169,9 @@ const CurrentCard = ({ tier, city, solBalance, solPrice }) => {
           <View style={cc.stat}>
             <Text style={cc.statLabel}>VALUE</Text>
             <Text style={cc.statVal}>
-              ${totalUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })}
+              {solPrice > 0
+                ? `$${totalUSD.toLocaleString(undefined, { maximumFractionDigits: 0 })}`
+                : '---'}
             </Text>
           </View>
           <View style={cc.statDiv} />
@@ -236,10 +237,13 @@ const cc = StyleSheet.create({
 
 // ── Progress Bar Section ──────────────────────────────────────────────────────
 const ProgressSection = ({ upgrade, city }) => {
-  if (!upgrade?.nextTier) {
+  // Still loading — show nothing rather than "Maximum Level Reached" incorrectly
+  if (!upgrade) return null;
+
+  if (!upgrade.nextTier) {
     return (
       <View style={pg.wrap}>
-        <Text style={pg.maxText}>Maximum Level Reached</Text>
+        <Text style={pg.maxText}>Maximum Level Reached 👑</Text>
       </View>
     );
   }
