@@ -353,8 +353,7 @@ class ValueCalculator {
     const rawPercentile = (logSOL / logMax) * 100;
     
     const rank = Math.round(100 - rawPercentile);
-    console.log("🔢 Debug - solAmount:", solAmount, "rank:", rank);
-    
+
     if (rank < 1) return "Top 0.1%";
     if (rank < 2) return "Top 1%";
     if (rank < 5) return "Top 5%";

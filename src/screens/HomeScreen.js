@@ -238,7 +238,7 @@ export default function HomeScreen() {
       await loadPrices();
       const prices = await priceDataService.fetchAllPrices(selectedCity);
       const result = valueCalculator.determineMapping({
-        solAmount: balance || 2,
+        solAmount: balance || 0,
         solPrice:  prices.solPrice,
         cityType:  selectedCity,
       });
@@ -351,8 +351,8 @@ export default function HomeScreen() {
             </LinearGradient>
           )}
 
-          {/* Percentile badge */}
-          {isConnected && mappingResult?.percentile && (
+          {/* Percentile badge — hide for Newcomer (text doesn't read well) */}
+          {isConnected && mappingResult?.percentile && mappingResult.percentile !== 'Newcomer' && (
             <View style={s.percentileBadge}>
               <Text style={s.percentileText}>{mappingResult.percentile} of SOL Holders</Text>
             </View>
@@ -611,13 +611,6 @@ const s = StyleSheet.create({
     textAlign: 'center',
     letterSpacing: 0.5,
   },
-  identityEmpty: {
-    marginTop: 20,
-    fontSize: 15,
-    color: P.gray,
-    letterSpacing: 1,
-  },
-
   percentileBadge: {
     marginTop: 10,
     backgroundColor: 'rgba(201,168,76,0.1)',

@@ -15,21 +15,6 @@ import {
 import { LinearGradient } from 'expo-linear-gradient';
 import { useWallet } from '../context/WalletContext';
 
-// ── Jupiter deep link: open app if installed, fall back to web ────────────────
-const JUP_WEB_URL = 'https://jup.ag/swap/USDC-SOL';
-const openJupiter = async () => {
-  try {
-    const canOpenApp = await Linking.canOpenURL('jup://');
-    if (canOpenApp) {
-      await Linking.openURL('jup://swap/USDC-SOL');
-    } else {
-      await Linking.openURL(JUP_WEB_URL);
-    }
-  } catch {
-    await Linking.openURL(JUP_WEB_URL);
-  }
-};
-
 const P = {
   black:    '#000000',
   charcoal: '#0A0A0A',
@@ -182,20 +167,6 @@ const s = StyleSheet.create({
   rowBorder: { borderBottomWidth: 1, borderBottomColor: P.border },
   rowLabel:  { fontSize: 14, color: P.offWhite, flex: 1 },
   rowValue:  { fontSize: 13, color: P.gray },
-
-  // Segment control
-  segWrap: { flexDirection: 'row' },
-  segBtn: {
-    paddingHorizontal: 12,
-    paddingVertical: 5,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: P.border,
-    backgroundColor: P.dark,
-  },
-  segActive:     { backgroundColor: P.gold, borderColor: P.gold },
-  segText:       { fontSize: 12, color: P.gray, fontWeight: '600' },
-  segTextActive: { color: P.black },
 
   // Disclaimer
   disclaimer: {

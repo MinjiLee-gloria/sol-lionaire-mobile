@@ -12,14 +12,15 @@
 import React, { useState, useEffect, useRef } from 'react';
 import {
   View, Text, ScrollView, StyleSheet, Animated,
-  TouchableOpacity, Image, Dimensions, Linking,
+  TouchableOpacity, Image, Dimensions, Linking, ActivityIndicator,
 } from 'react-native';
+import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useWallet } from '../context/WalletContext';
 import { valueCalculator, PROPERTY_TIERS, CityType } from '../services/valueCalculator';
 import { priceDataService } from '../services/pythPriceService';
-import { buildClaimTransaction, getExplorerUrl } from '../services/claimService';
+import { buildClaimTransaction, getExplorerUrl, DEV_MODE } from '../services/claimService';
 
 const { width: W, height: H } = Dimensions.get('window');
 
@@ -370,22 +371,35 @@ const ClaimSection = ({ tier, city, walletAddress, signAndSendTransaction }) => 
 
   if (status === 'success') {
     return (
-      <View style={cl.wrap}>
+      <View style={[cl.wrap, cl.wrapSuccess]}>
         <LinearGradient
           colors={[P.goldDeep, P.gold, P.goldLight, P.gold, P.goldDeep]}
           start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
           style={cl.accentLine}
         />
-        <Text style={cl.successEye}>ON-CHAIN VERIFIED</Text>
+        {/* Checkmark icon */}
+        <View style={cl.successIcon}>
+          <Ionicons name="checkmark-circle" size={44} color={P.gold} />
+        </View>
+        <Text style={cl.successEye}>ON-CHAIN VERIFIED · {DEV_MODE ? 'DEVNET' : 'MAINNET'}</Text>
         <Text style={cl.successTitle}>Territory Claimed</Text>
         <Text style={cl.successSub}>
-          Level {tier.level} · {tier.names[city]}{'\n'}recorded on Solana Mainnet
+          Level {tier.level} · {tier.names[city]}{'\n'}
+          recorded on Solana {DEV_MODE ? 'Devnet' : 'Mainnet'}
         </Text>
+        {/* Styled explorer button */}
         <TouchableOpacity
           style={cl.explorerBtn}
           onPress={() => Linking.openURL(getExplorerUrl(txSig))}
+          activeOpacity={0.8}
         >
-          <Text style={cl.explorerText}>View on Explorer →</Text>
+          <LinearGradient
+            colors={[P.goldDeep, P.gold, P.goldLight, P.gold, P.goldDeep]}
+            start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+            style={cl.explorerBtnGrad}
+          >
+            <Text style={cl.explorerBtnText}>View on Explorer →</Text>
+          </LinearGradient>
         </TouchableOpacity>
       </View>
     );
@@ -447,11 +461,14 @@ const cl = StyleSheet.create({
   hint:    { fontSize: 11, color: P.border, textAlign: 'center', marginTop: 10 },
   errText: { fontSize: 12, color: '#FF6B6B', textAlign: 'center', marginTop: 8 },
   // success state
+  wrapSuccess:  { borderColor: P.gold },
+  successIcon:  { alignItems: 'center', marginBottom: 10, marginTop: 4 },
   successEye:   { fontSize: 9, color: P.goldLight, letterSpacing: 3, fontWeight: '600', marginBottom: 8 },
   successTitle: { fontSize: 20, fontWeight: '700', color: P.goldLight, marginBottom: 8 },
   successSub:   { fontSize: 13, color: P.gray, lineHeight: 20, marginBottom: 16 },
-  explorerBtn:  { alignSelf: 'flex-start' },
-  explorerText: { fontSize: 14, color: P.gold, fontWeight: '600' },
+  explorerBtn:      { borderRadius: 10, overflow: 'hidden' },
+  explorerBtnGrad:  { paddingVertical: 12, alignItems: 'center' },
+  explorerBtnText:  { fontSize: 14, fontWeight: '800', color: P.black, letterSpacing: 0.5 },
 });
 
 // ── Not Connected Placeholder ─────────────────────────────────────────────────
@@ -477,6 +494,7 @@ export default function OdysseyScreen() {
   const [solPrice,    setSolPrice]    = useState(0);
   const [currentTier, setCurrentTier] = useState(null);
   const [upgrade,     setUpgrade]     = useState(null);
+  const [isLoading,   setIsLoading]   = useState(false);
 
   const scrollRef = useRef(null);
 
@@ -494,6 +512,7 @@ export default function OdysseyScreen() {
   }, [currentTier]);
 
   const loadData = async () => {
+    setIsLoading(true);
     try {
       const prices = await priceDataService.fetchAllPrices(city);
       const price  = prices.solPrice || 0;
@@ -507,6 +526,8 @@ export default function OdysseyScreen() {
       setUpgrade(up);
     } catch (e) {
       console.error('Empire load failed:', e);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -559,12 +580,19 @@ export default function OdysseyScreen() {
 
         {/* C. Current Hero — sticky (index 1 when prevTier, index 0 when not) */}
         <View style={s.stickyWrap}>
-          <CurrentCard
-            tier={currentTier}
-            city={city}
-            solBalance={solBalance}
-            solPrice={solPrice}
-          />
+          {isLoading && !currentTier ? (
+            <View style={s.loadingCard}>
+              <ActivityIndicator size="small" color={P.gold} />
+              <Text style={s.loadingText}>Loading Empire…</Text>
+            </View>
+          ) : (
+            <CurrentCard
+              tier={currentTier}
+              city={city}
+              solBalance={solBalance}
+              solPrice={solPrice}
+            />
+          )}
         </View>
 
         {/* D. Progress Section */}
@@ -635,6 +663,19 @@ const s = StyleSheet.create({
     paddingVertical: 8,
     paddingTop: 2,
   },
+
+  loadingCard: {
+    marginHorizontal: 16,
+    borderRadius: 20,
+    borderWidth: 1,
+    borderColor: P.border,
+    backgroundColor: P.dark,
+    height: 120,
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 10,
+  },
+  loadingText: { fontSize: 12, color: P.gray, letterSpacing: 2 },
 
   sectionLabel: { marginHorizontal: 16, marginTop: 28, marginBottom: 4 },
   sectionEye:   { fontSize: 9, color: P.gold, letterSpacing: 4, fontWeight: '600' },
