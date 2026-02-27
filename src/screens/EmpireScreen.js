@@ -233,15 +233,17 @@ const cc = StyleSheet.create({
   narrative: { fontSize: 13, color: P.gray, lineHeight: 20, textAlign: 'center', fontStyle: 'italic' },
 });
 
-// ── Shimmer sweep overlay for gold gradient buttons ───────────────────────────
-const ShimmerOverlay = () => {
-  const x = useRef(new Animated.Value(-100)).current;
+// ── Diagonal gold sweep — "your assets are moving upward" ─────────────────────
+// 12° tilted #FFD700 beam glides left→right every ~4.4s.
+// Extended top/bottom so the rotated corners stay hidden by overflow:hidden.
+const GoldSweep = () => {
+  const x = useRef(new Animated.Value(-120)).current;
   useEffect(() => {
     const anim = Animated.loop(
       Animated.sequence([
-        Animated.delay(2800),
-        Animated.timing(x, { toValue: 420, duration: 650, useNativeDriver: true }),
-        Animated.timing(x, { toValue: -100, duration: 0,   useNativeDriver: true }),
+        Animated.delay(3500),
+        Animated.timing(x, { toValue: 460, duration: 900, useNativeDriver: true }),
+        Animated.timing(x, { toValue: -120, duration: 0,  useNativeDriver: true }),
       ])
     );
     anim.start();
@@ -250,10 +252,15 @@ const ShimmerOverlay = () => {
   return (
     <Animated.View
       pointerEvents="none"
-      style={{ position: 'absolute', top: 0, bottom: 0, width: 80, transform: [{ translateX: x }] }}
+      style={{
+        position: 'absolute',
+        top: -20, bottom: -20,
+        width: 70,
+        transform: [{ translateX: x }, { rotate: '12deg' }],
+      }}
     >
       <LinearGradient
-        colors={['transparent', 'rgba(255,255,255,0.38)', 'transparent']}
+        colors={['transparent', 'rgba(255,215,0,0.55)', 'transparent']}
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
         style={{ flex: 1 }}
       />
@@ -297,7 +304,7 @@ const ProgressSection = ({ upgrade, city }) => {
         >
           <Text style={pg.jupText}>Upgrade via Jupiter</Text>
         </LinearGradient>
-        <ShimmerOverlay />
+        <GoldSweep />
       </TouchableOpacity>
     </View>
   );
