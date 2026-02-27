@@ -387,6 +387,7 @@ class ValueCalculator {
     const starInfo = this.calculateStarProgress(solAmount, tier);
 
     const percentile = this.getPercentile(solAmount);
+    const upgrade    = this.calculateUpgrade({ solAmount, solPrice, cityType });
     return {
       totalValue: totalUSD,
       cityType,
@@ -400,6 +401,7 @@ class ValueCalculator {
       sqm: (totalUSD / city.pricePerSqm).toFixed(2),
       starProgress: starInfo,
       percentile,
+      upgrade,
     };
   }
 
