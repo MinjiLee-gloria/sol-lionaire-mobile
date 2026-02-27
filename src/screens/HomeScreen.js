@@ -12,7 +12,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,
   TouchableOpacity, StatusBar, Animated, Modal, Image,
-  Dimensions,
+  Dimensions, PanResponder,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Polyline } from 'react-native-svg';
@@ -24,6 +24,7 @@ import { useWallet } from '../context/WalletContext';
 import { valueCalculator, CityType } from '../services/valueCalculator';
 import { priceDataService } from '../services/pythPriceService';
 import CalculatingAnimation from '../components/CalculatingAnimation';
+import { useLustre } from '../hooks/useLustre';
 
 const { width: SCREEN_W } = Dimensions.get('window');
 
@@ -127,6 +128,114 @@ const PriceSpark = ({ prices, positive }) => {
   );
 };
 
+// ── Lustre: gold flash when badge is buffed ───────────────────────────────────
+const BuffFlash = ({ visible }) => {
+  const flash = useRef(new Animated.Value(0)).current;
+  useEffect(() => {
+    if (!visible) return;
+    flash.setValue(1);
+    Animated.timing(flash, { toValue: 0, duration: 700, useNativeDriver: true }).start();
+  }, [visible]);
+  return (
+    <Animated.View
+      pointerEvents="none"
+      style={{
+        position: 'absolute', top: 0, left: 0, right: 0, bottom: 0,
+        borderRadius: 12,
+        backgroundColor: 'rgba(255,215,0,0.45)',
+        opacity: flash,
+      }}
+    />
+  );
+};
+
+// ── Lustre: 6 gold sparks fly outward on buff ─────────────────────────────────
+const SPARK_ANGLES = [0, 60, 120, 180, 240, 300];
+const SparkParticles = ({ trigger }) => {
+  const anims = useRef(
+    Array.from({ length: 6 }, () => ({
+      x:  new Animated.Value(0),
+      y:  new Animated.Value(0),
+      op: new Animated.Value(0),
+    }))
+  ).current;
+
+  useEffect(() => {
+    if (!trigger) return;
+    anims.forEach(a => { a.x.setValue(0); a.y.setValue(0); a.op.setValue(0); });
+    Animated.parallel(
+      anims.map((a, i) => {
+        const rad  = (SPARK_ANGLES[i] * Math.PI) / 180;
+        const dist = 58;
+        return Animated.parallel([
+          Animated.timing(a.x,  { toValue: Math.cos(rad) * dist, duration: 520, useNativeDriver: true }),
+          Animated.timing(a.y,  { toValue: Math.sin(rad) * dist, duration: 520, useNativeDriver: true }),
+          Animated.sequence([
+            Animated.timing(a.op, { toValue: 1, duration: 80,  useNativeDriver: true }),
+            Animated.timing(a.op, { toValue: 0, duration: 440, useNativeDriver: true }),
+          ]),
+        ]);
+      })
+    ).start();
+  }, [trigger]);
+
+  return (
+    <View pointerEvents="none" style={{ position: 'absolute', alignSelf: 'center', top: '40%' }}>
+      {anims.map((a, i) => (
+        <Animated.View
+          key={i}
+          style={{
+            position: 'absolute',
+            width: 7, height: 7, borderRadius: 4,
+            backgroundColor: i % 2 === 0 ? '#FFD700' : '#FFFACD',
+            marginLeft: -3.5, marginTop: -3.5,
+            opacity: a.op,
+            transform: [{ translateX: a.x }, { translateY: a.y }],
+          }}
+        />
+      ))}
+    </View>
+  );
+};
+
+// ── Lustre: gauge bar + streak indicator shown below badge ────────────────────
+const LustreGauge = ({ lustre, streak, isMidasTouch }) => {
+  const barColor = isMidasTouch ? ['#B8860B', '#FFD700', '#FFFACD']
+    : lustre > 60 ? [P.goldDeep, P.gold, P.goldLight]
+    : lustre > 25 ? ['#6B5B1A', '#A07830', '#C9A84C']
+    :               ['#3A3A3A', '#555',    '#777'];
+
+  return (
+    <View style={lg.wrap}>
+      {/* Bar */}
+      <View style={lg.barBg}>
+        <LinearGradient
+          colors={barColor}
+          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+          style={[lg.barFill, { width: `${lustre}%` }]}
+        />
+      </View>
+      {/* Labels row */}
+      <View style={lg.row}>
+        <Text style={lg.label}>LUSTRE</Text>
+        <Text style={[lg.pct, {
+          color: isMidasTouch ? '#FFD700' : lustre > 60 ? P.goldLight : lustre > 25 ? P.gold : '#666',
+        }]}>{lustre}%</Text>
+        {streak > 0 && !isMidasTouch && (
+          <Text style={lg.streak}>🔥 {streak}d</Text>
+        )}
+        {isMidasTouch && (
+          <Text style={lg.midas}>✨ MIDAS</Text>
+        )}
+      </View>
+      {/* Hint when fading */}
+      {lustre < 35 && (
+        <Text style={lg.hint}>← 스와이프하여 광택 복구 →</Text>
+      )}
+    </View>
+  );
+};
+
 // ── Wallet Picker Modal ───────────────────────────────────────────────────────
 const WalletPickerModal = ({ visible, onSelect, onClose }) => {
   const fadeAnim = useRef(new Animated.Value(0)).current;
@@ -167,7 +276,7 @@ const WalletPickerModal = ({ visible, onSelect, onClose }) => {
 // ── Floating Badge ────────────────────────────────────────────────────────────
 // nextImageKey: faint silhouette of the next level shown behind the current frame
 // level: scales glow intensity (1 = subtle, 10 = blazing)
-const FloatingBadge = ({ imageKey, nextImageKey, tierColor, level }) => {
+const FloatingBadge = ({ imageKey, nextImageKey, tierColor, level, isMidasTouch }) => {
   const floatAnim = useRef(new Animated.Value(0)).current;
   const glowAnim  = useRef(new Animated.Value(0.6)).current;
 
@@ -202,6 +311,10 @@ const FloatingBadge = ({ imageKey, nextImageKey, tierColor, level }) => {
         s.badgeGlow,
         { opacity: glowAnim, borderColor: tierColor || P.gold, shadowRadius: glowRadius },
       ]} />
+      {/* Midas Touch extra aura — 7-day streak reward */}
+      {isMidasTouch && (
+        <Animated.View style={[s.midasAura, { opacity: glowAnim }]} />
+      )}
       {/* Next-level silhouette — faint ghost of the next property */}
       {nextImageSource && (
         <Image
@@ -274,12 +387,38 @@ export default function HomeScreen() {
 
   const [isSharing,      setIsSharing]      = useState(false);
   const [selectedCity,   setSelectedCity]   = useState(CityType.MANHATTAN);
+  const [showFlash,      setShowFlash]      = useState(false);
+  const [buffCount,      setBuffCount]      = useState(0);    // triggers SparkParticles
   const [solPrice,       setSolPrice]       = useState(0);
   const [priceChange24h, setPriceChange24h] = useState(null);
   const [solSparkline,   setSolSparkline]   = useState([]);
   const [mappingResult,  setMappingResult]  = useState(null);
   const [isCalculating,  setIsCalculating]  = useState(false);
   const [showPicker,     setShowPicker]     = useState(false);
+
+  // Lustre meter — 24h decay, swipe-to-buff, 7-day Midas streak
+  const { lustre, streak, isMidasTouch, buff } = useLustre(walletAddress);
+
+  // buffRef: stable reference so PanResponder (created once) always calls latest buff
+  const buffRef = useRef(buff);
+  useEffect(() => { buffRef.current = buff; }, [buff]);
+
+  // PanResponder: horizontal swipe on badge → buff
+  const lustrePan = useRef(
+    PanResponder.create({
+      onStartShouldSetPanResponder:       () => false,
+      onMoveShouldSetPanResponder: (_, { dx, dy }) =>
+        Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy),
+      onPanResponderRelease: (_, { dx }) => {
+        if (Math.abs(dx) > 35) {
+          buffRef.current();
+          setShowFlash(true);
+          setBuffCount(c => c + 1);
+          setTimeout(() => setShowFlash(false), 750);
+        }
+      },
+    })
+  ).current;
 
   // City transition fade — fades hero+balance out then back in on city switch
   const cityFade = useRef(new Animated.Value(1)).current;
@@ -440,14 +579,24 @@ export default function HomeScreen() {
           {/* Hero Badge */}
           <View style={s.heroArea}>
             {isConnected && mappingResult ? (
-              <FloatingBadge
-                imageKey={imageKey}
-                nextImageKey={nextImageKey}
-                tierColor={tier?.color}
-                level={levelNum}
-              />
+              <View {...lustrePan.panHandlers} style={{ alignItems: 'center' }}>
+                <FloatingBadge
+                  imageKey={imageKey}
+                  nextImageKey={nextImageKey}
+                  tierColor={tier?.color}
+                  level={levelNum}
+                  isMidasTouch={isMidasTouch}
+                />
+                <BuffFlash visible={showFlash} />
+                <SparkParticles trigger={buffCount} />
+              </View>
             ) : (
               <DefaultBadge />
+            )}
+
+            {/* Lustre gauge — only shown when connected */}
+            {isConnected && mappingResult && (
+              <LustreGauge lustre={lustre} streak={streak} isMidasTouch={isMidasTouch} />
             )}
 
             {/* Identity Label — only shown when connected and result available */}
@@ -679,6 +828,20 @@ const s = StyleSheet.create({
     borderRadius: 16,
     opacity: 0.18,
   },
+  // Midas Touch: extra golden ring around badge (7-day streak reward)
+  midasAura: {
+    position: 'absolute',
+    width: BADGE_SIZE + 52,
+    height: BADGE_SIZE + 52,
+    borderRadius: (BADGE_SIZE + 52) / 2,
+    borderWidth: 2.5,
+    borderColor: '#FFD700',
+    top: -26,
+    shadowColor: '#FFD700',
+    shadowOffset: { width: 0, height: 0 },
+    shadowOpacity: 1,
+    shadowRadius: 18,
+  },
   badgeGlow: {
     position: 'absolute',
     width: BADGE_SIZE + 32,
@@ -865,6 +1028,19 @@ const s = StyleSheet.create({
     opacity: 0,       // hidden but still rendered & measurable
     pointerEvents: 'none',
   },
+});
+
+// ── Lustre Gauge Styles ───────────────────────────────────────────────────────
+const lg = StyleSheet.create({
+  wrap:   { alignItems: 'center', marginTop: 6, marginBottom: 4, width: '100%' },
+  barBg:  { width: 140, height: 4, backgroundColor: P.border, borderRadius: 2, overflow: 'hidden', marginBottom: 5 },
+  barFill:{ height: '100%', borderRadius: 2 },
+  row:    { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  label:  { fontSize: 8,  color: P.gray,      letterSpacing: 2, fontWeight: '600' },
+  pct:    { fontSize: 10, fontWeight: '700',  letterSpacing: 0.5 },
+  streak: { fontSize: 10, color: P.gold },
+  midas:  { fontSize: 10, color: '#FFD700',   fontWeight: '700', letterSpacing: 1 },
+  hint:   { fontSize: 9,  color: '#555',       marginTop: 4, letterSpacing: 0.5 },
 });
 
 // ── Wallet Modal Styles ───────────────────────────────────────────────────────
