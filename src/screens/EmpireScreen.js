@@ -133,27 +133,26 @@ const CurrentCard = ({ tier, city, solBalance, solPrice }) => {
 
   return (
     <View style={cc.wrap}>
+      {/* Top gold accent bar */}
       <LinearGradient
         colors={[P.goldDeep, P.gold, P.goldLight, P.gold, P.goldDeep]}
         start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
         style={cc.accentTop}
       />
-      {/* Hero image */}
-      <Image source={getImage(imgKey)} style={cc.image} resizeMode="cover" />
+      {/* Property image — contain so pixel art is never clipped */}
+      <View style={cc.imageWrap}>
+        <Image source={getImage(imgKey)} style={cc.image} resizeMode="contain" />
+      </View>
+      {/* Gold gradient separator — connects image to text area */}
       <LinearGradient
-        colors={['rgba(0,0,0,0)', 'rgba(0,0,0,0.85)']}
-        style={cc.imageOverlay}
+        colors={['rgba(160,120,48,0.2)', P.gold, P.goldLight, P.gold, 'rgba(160,120,48,0.2)']}
+        start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
+        style={cc.goldSep}
       />
       {/* Content */}
       <View style={cc.content}>
         <Text style={cc.eyebrow}>CURRENT STATUS · LEVEL {tier.level}</Text>
-        <LinearGradient
-          colors={[P.goldDeep, P.gold, P.goldLight, P.gold, P.goldDeep]}
-          start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
-          style={cc.titleGrad}
-        >
-          <Text style={cc.title} numberOfLines={2}>{tier.names[city]}</Text>
-        </LinearGradient>
+        <Text style={cc.title} numberOfLines={2}>{tier.names[city]}</Text>
         <Text style={cc.loc}>{tier.locations[city]}</Text>
 
         <View style={cc.statsRow}>
@@ -188,36 +187,26 @@ const CurrentCard = ({ tier, city, solBalance, solPrice }) => {
 const cc = StyleSheet.create({
   wrap: {
     marginHorizontal: 16,
+    marginBottom: 8,           // breathing room below card
     borderRadius: 20,
     borderWidth: 2,
     borderColor: P.gold,
     overflow: 'hidden',
-    backgroundColor: P.dark,
+    backgroundColor: '#000000',
     shadowColor: P.gold,
     shadowOffset: { width: 0, height: 0 },
     shadowOpacity: 0.4,
     shadowRadius: 20,
     elevation: 20,
   },
-  accentTop: { height: 3, width: '100%' },
-  image: { width: '100%', height: 200, position: 'absolute', top: 3 },
-  imageOverlay: { height: 200, position: 'absolute', top: 3, left: 0, right: 0 },
-  content: { marginTop: 3 + 200 - 40, padding: 20 },
-  eyebrow: { fontSize: 9, color: P.gold, letterSpacing: 3, fontWeight: '600', marginBottom: 8 },
-  titleGrad: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 14,
-    paddingVertical: 6,
-    borderRadius: 6,
-    marginBottom: 8,
-  },
-  title: {
-    fontSize: 17,
-    fontWeight: '800',
-    color: P.black,
-    letterSpacing: 0.3,
-  },
-  loc:  { fontSize: 12, color: P.gray, marginBottom: 16 },
+  accentTop:  { height: 3, width: '100%' },
+  imageWrap:  { width: '100%', backgroundColor: '#000000' },
+  image:      { width: '100%', height: 220 },  // contain in JSX, full pixel art visible
+  goldSep:    { height: 2, width: '100%' },    // gold shimmer line, not a fade-out
+  content:    { padding: 20, paddingTop: 16, backgroundColor: P.dark },
+  eyebrow:    { fontSize: 9, color: P.gold, letterSpacing: 3, fontWeight: '600', marginBottom: 10 },
+  title:      { fontSize: 20, fontWeight: '800', color: P.goldLight, letterSpacing: 0.3, marginBottom: 6 },
+  loc:        { fontSize: 12, color: P.gray, marginBottom: 16 },
   statsRow: {
     flexDirection: 'row',
     borderTopWidth: 1,
@@ -226,7 +215,7 @@ const cc = StyleSheet.create({
     paddingVertical: 14,
     marginBottom: 16,
   },
-  stat:    { flex: 1, alignItems: 'center' },
+  stat:      { flex: 1, alignItems: 'center' },
   statLabel: { fontSize: 9, color: P.gray, letterSpacing: 2, marginBottom: 4 },
   statVal:   { fontSize: 17, fontWeight: '700', color: P.offWhite },
   statDiv:   { width: 1, backgroundColor: P.border },
@@ -715,8 +704,8 @@ const s = StyleSheet.create({
 
   stickyWrap: {
     backgroundColor: P.black,
-    paddingVertical: 8,
-    paddingTop: 2,
+    paddingTop: 6,
+    paddingBottom: 16,
   },
 
   loadingCard: {
