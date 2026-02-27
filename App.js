@@ -46,7 +46,7 @@ export default function App() {
               options={{
                 tabBarLabel: 'Empire',
                 tabBarIcon: ({ color, focused }) => (
-                  <Ionicons name={focused ? 'business' : 'business-outline'} size={22} color={color} />
+                  <Ionicons name={focused ? 'crown' : 'crown-outline'} size={22} color={color} />
                 ),
               }}
             />
