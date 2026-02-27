@@ -497,7 +497,7 @@ const EmptyState = () => (
 );
 
 // ── Main Screen ───────────────────────────────────────────────────────────────
-export default function OdysseyScreen() {
+export default function EmpireScreen() {
   const { walletAddress, balance, isConnected, signAndSendTransaction } = useWallet();
 
   const [city,        setCity]        = useState(CityType.MANHATTAN);

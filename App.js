@@ -7,7 +7,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 
 import HomeScreen from './src/screens/HomeScreen';
-import OdysseyScreen from './src/screens/OdysseyScreen';
+import EmpireScreen from './src/screens/EmpireScreen';
 import DistrictScreen from './src/screens/DistrictScreen';
 import MoreScreen from './src/screens/MoreScreen';
 
@@ -42,7 +42,7 @@ export default function App() {
             />
             <Tab.Screen
               name="Empire"
-              component={OdysseyScreen}
+              component={EmpireScreen}
               options={{
                 tabBarLabel: 'Empire',
                 tabBarIcon: ({ color, focused }) => (
