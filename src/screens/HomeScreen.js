@@ -258,7 +258,9 @@ export default function HomeScreen() {
         if (Math.abs(dx) > 35) {
           buffRef.current();
           setFlashText(pickQuote());
-          setShowFlash(true);
+          // Reset to false first so the effect re-fires even on rapid consecutive swipes
+          setShowFlash(false);
+          requestAnimationFrame(() => setShowFlash(true));
           setBuffCount(c => c + 1);
           setTimeout(() => setShowFlash(false), 750);
         }

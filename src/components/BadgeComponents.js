@@ -26,6 +26,7 @@ export const FloatingBadge = ({ imageKey, nextImageKey, tierColor, level, isMida
   const glowMax    = Math.min(0.5 + (level || 1) * 0.05, 1.0);
   const glowRadius = Math.min(16 + (level || 1) * 3, 46);
 
+  // Float loop: runs once, never needs restart
   useEffect(() => {
     const floatLoop = Animated.loop(
       Animated.sequence([
@@ -34,7 +35,11 @@ export const FloatingBadge = ({ imageKey, nextImageKey, tierColor, level, isMida
       ])
     );
     floatLoop.start();
+    return () => floatLoop.stop();
+  }, []);
 
+  // Glow loop: restarts when level changes so intensity reflects current tier
+  useEffect(() => {
     const glowLoop = Animated.loop(
       Animated.sequence([
         Animated.timing(glowAnim, { toValue: glowMax,       duration: 1800, useNativeDriver: true }),
@@ -42,12 +47,8 @@ export const FloatingBadge = ({ imageKey, nextImageKey, tierColor, level, isMida
       ])
     );
     glowLoop.start();
-
-    return () => {
-      floatLoop.stop();
-      glowLoop.stop();
-    };
-  }, []);
+    return () => glowLoop.stop();
+  }, [glowMax]);
 
   // Narrative text: fade in → hold → fade out on each swipe
   useEffect(() => {

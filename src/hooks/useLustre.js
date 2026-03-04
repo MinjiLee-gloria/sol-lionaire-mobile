@@ -10,12 +10,15 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const DECAY_HOURS = 24;
 
-const todayStr = () => new Date().toISOString().slice(0, 10);      // 'YYYY-MM-DD'
-const yesterdayStr = () => {
-  const d = new Date();
-  d.setDate(d.getDate() - 1);
-  return d.toISOString().slice(0, 10);
+// Use local date (not UTC) so streak counting aligns with the user's clock
+const localDateStr = (date = new Date()) => {
+  const y = date.getFullYear();
+  const m = String(date.getMonth() + 1).padStart(2, '0');
+  const d = String(date.getDate()).padStart(2, '0');
+  return `${y}-${m}-${d}`;
 };
+const todayStr     = ()  => localDateStr();
+const yesterdayStr = ()  => { const d = new Date(); d.setDate(d.getDate() - 1); return localDateStr(d); };
 
 export const useLustre = (walletAddress) => {
   const [lustre,       setLustre]       = useState(100);
@@ -29,7 +32,7 @@ export const useLustre = (walletAddress) => {
     if (!key) { setLustre(100); setStreak(0); setIsMidasTouch(false); return; }
     try {
       const raw  = await AsyncStorage.getItem(key);
-      if (!raw) { setLustre(100); return; }
+      if (!raw) { setLustre(100); setStreak(0); setIsMidasTouch(false); return; }
       const data = JSON.parse(raw);
 
       const elapsedH = (Date.now() - new Date(data.lastBuff).getTime()) / 3_600_000;
