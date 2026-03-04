@@ -12,6 +12,8 @@ export const BuffFlash = ({ visible }) => {
   const flash = useRef(new Animated.Value(0)).current;
   useEffect(() => {
     if (!visible) return;
+    // Stop any in-progress fade before restarting — prevents yellow filter getting stuck
+    flash.stopAnimation();
     flash.setValue(1);
     Animated.timing(flash, { toValue: 0, duration: 700, useNativeDriver: true }).start();
   }, [visible]);
@@ -47,13 +49,22 @@ export const SparkParticles = ({ trigger }) => {
   useEffect(() => {
     if (!trigger) return;
 
-    // Stop previous animation entirely before resetting — prevents the end-flash
+    // Stop parent parallel first, then explicitly stop + reset each individual
+    // Animated.Value. Relying on parent.stop() alone doesn't reliably cancel
+    // pending Animated.delay() nodes, which can fire after reset and leave
+    // coins frozen on screen.
     if (animRef.current) {
       animRef.current.stop();
       animRef.current = null;
     }
-
-    anims.forEach(a => { a.x.setValue(0); a.y.setValue(0); a.op.setValue(0); });
+    anims.forEach(a => {
+      a.x.stopAnimation();
+      a.y.stopAnimation();
+      a.op.stopAnimation();
+      a.x.setValue(0);
+      a.y.setValue(0);
+      a.op.setValue(0);
+    });
 
     const coinAnims = anims.map((a, i) => {
       const peakY  = COIN_PEAK_Y[i];

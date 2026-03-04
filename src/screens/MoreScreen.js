@@ -7,10 +7,10 @@
  *  - Project Info      : Hackathon details, social links
  *  - Legal Disclaimer
  */
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,
-  TouchableOpacity, Linking,
+  TouchableOpacity, Linking, Clipboard,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useWallet } from '../context/WalletContext';
@@ -40,13 +40,35 @@ const Row = ({ label, value, onPress, isLast, danger }) => (
 );
 
 
-// ── Main Screen ───────────────────────────────────────────────────────────────
-export default function MoreScreen() {
-  const { walletAddress, isConnected, walletName, disconnectWallet } = useWallet();
-
+// ── Address row with copy button ──────────────────────────────────────────────
+const AddressRow = ({ walletAddress }) => {
+  const [copied, setCopied] = useState(false);
   const shortAddr = walletAddress
     ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-6)}`
     : null;
+  const handleCopy = () => {
+    Clipboard.setString(walletAddress);
+    setCopied(true);
+    setTimeout(() => setCopied(false), 1500);
+  };
+  return (
+    <TouchableOpacity
+      style={[s.row, s.rowBorder]}
+      onPress={handleCopy}
+      activeOpacity={0.6}
+    >
+      <Text style={s.rowLabel}>Address</Text>
+      <View style={s.addrWrap}>
+        <Text style={s.rowValue}>{shortAddr}</Text>
+        <Text style={[s.rowValue, s.copyIcon]}>{copied ? '✓' : '⧉'}</Text>
+      </View>
+    </TouchableOpacity>
+  );
+};
+
+// ── Main Screen ───────────────────────────────────────────────────────────────
+export default function MoreScreen() {
+  const { walletAddress, isConnected, walletName, disconnectWallet } = useWallet();
 
   return (
     <LinearGradient colors={[P.black, P.charcoal]} style={s.flex}>
@@ -64,7 +86,7 @@ export default function MoreScreen() {
           {isConnected ? (
             <>
               <Row label="Provider"  value={walletName || 'Seed Vault'} isLast={false} />
-              <Row label="Address"   value={shortAddr}                   isLast={false} />
+              <AddressRow walletAddress={walletAddress} />
               <Row
                 label="Disconnect"
                 value="→"
@@ -163,6 +185,8 @@ const s = StyleSheet.create({
   rowBorder: { borderBottomWidth: 1, borderBottomColor: P.border },
   rowLabel:  { fontSize: 14, color: P.offWhite, flex: 1 },
   rowValue:  { fontSize: 13, color: P.gray },
+  addrWrap:  { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  copyIcon:  { color: P.gold, fontSize: 13 },
 
   // Disclaimer
   disclaimer: {

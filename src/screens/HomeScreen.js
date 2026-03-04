@@ -12,7 +12,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,
   TouchableOpacity, StatusBar, Animated, Image,
-  Dimensions, PanResponder, Easing,
+  Dimensions, PanResponder, Easing, Clipboard,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Polyline } from 'react-native-svg';
@@ -237,6 +237,7 @@ export default function HomeScreen() {
   // buffRef: stable reference so PanResponder (created once) always calls latest buff
   const buffRef        = useRef(buff);
   const lastQuoteRef   = useRef(-1);
+  const flashTimerRef  = useRef(null);  // single timer slot — prevents old timers killing new flashes
   useEffect(() => { buffRef.current = buff; }, [buff]);
 
   // Pick a random swipe quote, never repeating the same one twice in a row
@@ -258,11 +259,15 @@ export default function HomeScreen() {
         if (Math.abs(dx) > 35) {
           buffRef.current();
           setFlashText(pickQuote());
-          // Reset to false first so the effect re-fires even on rapid consecutive swipes
+          // Clear any pending hide-timer before starting a fresh flash
+          if (flashTimerRef.current) { clearTimeout(flashTimerRef.current); flashTimerRef.current = null; }
+          // Reset false→true so BuffFlash useEffect always re-fires on rapid swipes
           setShowFlash(false);
-          requestAnimationFrame(() => setShowFlash(true));
+          requestAnimationFrame(() => {
+            setShowFlash(true);
+            flashTimerRef.current = setTimeout(() => { setShowFlash(false); flashTimerRef.current = null; }, 750);
+          });
           setBuffCount(c => c + 1);
-          setTimeout(() => setShowFlash(false), 750);
         }
       },
     })
@@ -534,12 +539,17 @@ export default function HomeScreen() {
                 </View>
               )}
 
-              {/* Wallet tag */}
-              <View style={s.walletTag}>
+              {/* Wallet tag — tap to copy full address */}
+              <TouchableOpacity
+                style={s.walletTag}
+                onPress={() => { if (walletAddress) Clipboard.setString(walletAddress); }}
+                activeOpacity={0.6}
+              >
                 <Text style={s.walletTagText}>
                   {walletAddress?.slice(0, 4)}…{walletAddress?.slice(-4)}
+                  {'  '}<Text style={s.walletTagCopy}>⧉</Text>
                 </Text>
-              </View>
+              </TouchableOpacity>
             </LinearGradient>
           </View>}
 
@@ -797,6 +807,7 @@ const s = StyleSheet.create({
     paddingVertical: 4,
   },
   walletTagText: { fontSize: 11, color: P.gray, fontFamily: 'monospace' },
+  walletTagCopy: { fontSize: 11, color: P.gold },
 
   // City tab bar — underline indicator style
   cityTabBar: {
