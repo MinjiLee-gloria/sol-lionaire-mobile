@@ -868,6 +868,8 @@ const s = StyleSheet.create({
     position: 'absolute',
     top: -2000,
     left: 0,
+    width: 1080,      // explicit width so 1080px card isn't clipped to screen width
+    height: 1350,     // explicit height to match card (4:5 portrait)
     opacity: 0,       // hidden but still rendered & measurable
     pointerEvents: 'none',
   },
@@ -939,7 +941,7 @@ const sc = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 60,
     paddingTop: 32,
-    paddingBottom: 56,
+    paddingBottom: 80,
     flex: 1,
   },
   propName: {
