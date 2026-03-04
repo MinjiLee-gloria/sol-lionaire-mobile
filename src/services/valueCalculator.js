@@ -332,20 +332,21 @@ class ValueCalculator {
   getPercentile(usdAmount) {
     if (!usdAmount || usdAmount < 1) return 'Newcomer';
 
-    // 2026 Q1 realistic SOL holder distribution — log-interpolated between anchor points.
-    // Each point: { usd: threshold, topPercent: % of holders above that value }
-    // Start at $1 (not $0) to avoid log(0) asymptote distortion.
+    // 2026 Q1 SOL holder distribution — dust-excluded.
+    // Comparison universe: wallets holding meaningful SOL (≥$1), excluding
+    // empty accounts, airdrop-farm dust, and spam wallets (~300M+ addresses).
+    // Among the ~15M non-dust holders, log-interpolated between anchor points.
+    // Each point: { usd: threshold, topPercent: % of non-dust holders above that value }
     const DIST = [
-      { usd: 1,        topPercent: 70.00 },  // $1+  → bottom 30% already out
-      { usd: 500,      topPercent: 30.00 },  // Level 1 max
-      { usd: 3000,     topPercent: 12.00 },  // Level 2 max
-      { usd: 100000,   topPercent:  2.50 },  // Level 3 max
-      { usd: 300000,   topPercent:  0.80 },  // Level 4 max
-      { usd: 750000,   topPercent:  0.30 },  // Level 5 max
-      { usd: 1500000,  topPercent:  0.10 },  // Level 6 max
-      { usd: 3500000,  topPercent:  0.05 },  // Level 7 max
-      { usd: 15000000, topPercent:  0.02 },  // Level 8 max
-      { usd: 20000000, topPercent:  0.01 },  // Level 9/10
+      { usd: 1,        topPercent: 97.00 },  // $1: barely above dust floor
+      { usd: 10,       topPercent: 85.00 },  // $10: ~0.1 SOL, entry-level holder
+      { usd: 100,      topPercent: 60.00 },  // $100: ~1 SOL, casual holder
+      { usd: 1000,     topPercent: 25.00 },  // $1K: ~11 SOL, committed holder
+      { usd: 10000,    topPercent:  6.00 },  // $10K: ~110 SOL, serious holder
+      { usd: 100000,   topPercent:  1.20 },  // $100K: ~1100 SOL
+      { usd: 1000000,  topPercent:  0.20 },  // $1M: ~11K SOL
+      { usd: 10000000, topPercent:  0.03 },  // $10M
+      { usd: 50000000, topPercent:  0.01 },  // $50M
     ];
 
     if (usdAmount >= DIST[DIST.length - 1].usd) return `Top ${DIST[DIST.length - 1].topPercent}%`;
