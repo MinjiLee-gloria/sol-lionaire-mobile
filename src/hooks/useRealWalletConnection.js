@@ -37,7 +37,7 @@ export const useRealWalletConnection = () => {
   const connectionRef = useRef(new Connection(SOLANA_RPC, 'confirmed'));
   const connection = connectionRef.current;
 
-  // 잔액 조회 - 별도로 비동기 실행 (연결 블로킹 안 함)
+  // Fetch balance separately — non-blocking, runs async without delaying connect
   const fetchBalance = async (pubkeyStr) => {
     try {
       const lamports = await connection.getBalance(new PublicKey(pubkeyStr));
@@ -71,14 +71,14 @@ export const useRealWalletConnection = () => {
         const pubkeyStr = pubkey.toBase58();
         console.log('✅ Connected (base58):', pubkeyStr);
 
-        // ★ 핵심: 잔액 기다리지 않고 먼저 연결 상태 업데이트!
+        // ★ Key: update connection state immediately without waiting for balance!
         setWalletAddress(pubkeyStr);
         setIsConnected(true);
         setWalletName(walletId === 'phantom' ? '👻 Phantom' : 'Seed Vault');
         setAuthToken(token);
         setIsLoading(false);
 
-        // 잔액은 별도로 백그라운드에서 조회
+        // Balance fetched separately in background
         fetchBalance(pubkeyStr).then(sol => {
           console.log('💰 Balance:', sol, 'SOL');
           setBalance(sol);

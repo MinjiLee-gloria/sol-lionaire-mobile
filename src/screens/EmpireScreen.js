@@ -2,7 +2,7 @@
  * Empire Screen — Sol-lionaire
  * Tab 2: The Vertical Progression
  *
- * Layout: 과거(Peek) → 현재(Sticky) → 미래(Scroll)
+ * Layout: Past(Peek) → Present(Sticky) → Future(Scroll)
  *  - A. NYC / Dubai toggle
  *  - B. Legacy Peek   : previous level, partially visible at top (blurred/faded)
  *  - C. Current Hero  : sticky card with full detail
