@@ -391,7 +391,7 @@ export default function HomeScreen() {
       // Capture share card as base64 PNG
       const uri = await captureRef(shareCardRef, { format: 'png', quality: 0.9, result: 'base64' });
 
-      const caption = `Claim your empire: solionaire.com 🚀\n#Solionaire #Solana #SOL #Web3`;
+      const caption = `Claim your empire: solionaire.com 🚀\n#Solionaire #Solana #SOL #Web3 #LuxuryStatusLayer`;
 
       await RNShare.open({
         url: `data:image/png;base64,${uri}`,
