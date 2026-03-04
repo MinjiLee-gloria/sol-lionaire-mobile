@@ -7,7 +7,7 @@ import { transact } from '@solana-mobile/mobile-wallet-adapter-protocol-web3js';
 import { Platform } from 'react-native';
 
 // ── DEV_MODE: true = devnet (safe testing), false = mainnet (production) ──────
-const DEV_MODE = true;
+const DEV_MODE = false;
 const SOLANA_RPC = DEV_MODE
   ? 'https://api.devnet.solana.com'
   : 'https://api.mainnet-beta.solana.com';

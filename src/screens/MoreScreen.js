@@ -106,7 +106,7 @@ export default function MoreScreen() {
             />
             <Text style={s.disclaimerTitle}>Simulation Notice</Text>
             <Text style={s.disclaimerBody}>
-              {'Sol-lionaire is purely an '}
+              {'Solionaire is purely an '}
               <Text style={s.bold}>entertainment and visualization app</Text>
               {'. All asset valuations and level progressions are '}
               <Text style={s.bold}>fictional simulations</Text>
