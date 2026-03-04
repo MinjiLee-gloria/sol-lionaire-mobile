@@ -939,7 +939,7 @@ const sc = StyleSheet.create({
     alignItems: 'center',
     paddingHorizontal: 60,
     paddingTop: 32,
-    paddingBottom: 36,
+    paddingBottom: 56,
     flex: 1,
   },
   propName: {
