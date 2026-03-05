@@ -11,19 +11,19 @@ export const CityType = {
 
 export const CITY_CONFIG = {
   MANHATTAN: {
-    pricePerSqm: 22000,
+    pricePerSqm: 23000,      // Miller Samuel Q4 2025 avg condo ×10.764 ≈ $23k/m²
     currency: 'USD',
-    lastUpdated: '2024-02',
-    source: 'Manhattan Market Report',
+    lastUpdated: '2026-01',
+    source: 'Manhattan Market Report (Miller Samuel Q4 2025)',
     label: 'New York',
     emoji: '🗽',
     tone: 'cold',
   },
   DUBAI: {
-    pricePerSqm: 7500,
+    pricePerSqm: 9000,       // Premium areas avg 2026, Dubai Land Department
     currency: 'USD',
-    lastUpdated: '2024-02',
-    source: 'Dubai Land Department (DLD)',
+    lastUpdated: '2026-01',
+    source: 'Dubai Land Department (DLD) 2026',
     label: 'Dubai',
     emoji: '🏙️',
     tone: 'warm',
@@ -391,7 +391,7 @@ class ValueCalculator {
     const city     = CITY_CONFIG[cityType];
     const starInfo = this.calculateStarProgress(totalUSD, tier);
     const percentile = this.getPercentile(totalUSD);
-    const upgrade    = this.calculateUpgrade({ solAmount, solPrice, cityType });
+    const upgrade    = this.calculateUpgrade({ solAmount, solPrice, cityType, _tierOverride: tier });
 
     return {
       totalValue: totalUSD,
@@ -410,9 +410,10 @@ class ValueCalculator {
     };
   }
 
-  calculateUpgrade({ solAmount, solPrice, cityType = 'MANHATTAN' }) {
+  // _tierOverride: pass buffered tier so progress bar matches displayed tier
+  calculateUpgrade({ solAmount, solPrice, cityType = 'MANHATTAN', _tierOverride = null }) {
     const totalUSD   = solAmount * solPrice;
-    const currentTier  = this.getTierForUSD(totalUSD);
+    const currentTier = _tierOverride ?? this.getTierForUSD(totalUSD);
     const currentIndex = PROPERTY_TIERS.indexOf(currentTier);
     const nextTier     = PROPERTY_TIERS[currentIndex + 1];
 

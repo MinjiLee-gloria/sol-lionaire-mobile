@@ -29,6 +29,7 @@ const WalletPickerModal = ({ visible, onSelect, onClose }) => {
     if (visible) {
       Animated.timing(fadeAnim, { toValue: 1, duration: 200, useNativeDriver: true }).start();
     } else {
+      fadeAnim.stopAnimation();
       fadeAnim.setValue(0);
     }
   }, [visible]);

@@ -2,7 +2,7 @@
  * DistrictScreen — The District
  * Tab 3: Level-gated community hub (concept / coming soon)
  */
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, ScrollView, StyleSheet } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Ionicons } from '@expo/vector-icons';
@@ -169,9 +169,18 @@ const EmptyState = () => (
 export default function DistrictScreen() {
   const { balance, isConnected } = useWallet();
 
+  // ── Async price fetch: cache read on cold start is 0 ─────────────────────
+  const [solPrice, setSolPrice] = useState(() => priceDataService.cache.solPrice || 0);
+  useEffect(() => {
+    let cancelled = false;
+    priceDataService.fetchSolPrice().then(p => {
+      if (!cancelled) setSolPrice(p || 0);
+    });
+    return () => { cancelled = true; };
+  }, []);
+
   if (!isConnected) return <EmptyState />;
 
-  const solPrice       = priceDataService.cache.solPrice || 0;
   const tier           = valueCalculator.getTierForUSD((balance || 0) * solPrice);
   const userLevel      = tier.level;
   const userDistrictId = getUserDistrictId(userLevel);

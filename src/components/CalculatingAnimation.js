@@ -3,12 +3,14 @@ import { View, Text, StyleSheet, Animated } from 'react-native';
 import { P } from '../constants/theme';
 
 export const CalculatingAnimation = ({ visible }) => {
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const ripple1  = useRef(new Animated.Value(0)).current;
-  const ripple2  = useRef(new Animated.Value(0)).current;
-  const ripple3  = useRef(new Animated.Value(0)).current;
+  const fadeAnim  = useRef(new Animated.Value(0)).current;
+  const ripple1   = useRef(new Animated.Value(0)).current;
+  const ripple2   = useRef(new Animated.Value(0)).current;
+  const ripple3   = useRef(new Animated.Value(0)).current;
   // Keep component mounted until fade-out finishes, so the animation actually plays
   const [shouldRender, setShouldRender] = useState(visible);
+  // Store loop refs so we can stop them when hiding
+  const loopsRef  = useRef([]);
 
   useEffect(() => {
     if (visible) {
@@ -19,7 +21,7 @@ export const CalculatingAnimation = ({ visible }) => {
         toValue: 1, duration: 300, useNativeDriver: true,
       }).start();
 
-      // Ripple animation
+      // Ripple animation — store loop refs to stop on cleanup
       const createRipple = (anim, delay) =>
         Animated.loop(
           Animated.sequence([
@@ -29,10 +31,19 @@ export const CalculatingAnimation = ({ visible }) => {
           ])
         );
 
-      createRipple(ripple1, 0).start();
-      createRipple(ripple2, 666).start();
-      createRipple(ripple3, 1333).start();
+      const l1 = createRipple(ripple1, 0);
+      const l2 = createRipple(ripple2, 666);
+      const l3 = createRipple(ripple3, 1333);
+      loopsRef.current = [l1, l2, l3];
+      l1.start(); l2.start(); l3.start();
     } else {
+      // Stop all running ripple loops + reset values before fade-out
+      loopsRef.current.forEach(l => l.stop());
+      loopsRef.current = [];
+      ripple1.setValue(0);
+      ripple2.setValue(0);
+      ripple3.setValue(0);
+
       // Fade out, THEN unmount
       Animated.timing(fadeAnim, {
         toValue: 0, duration: 200, useNativeDriver: true,

@@ -137,6 +137,8 @@ export const useRealWalletConnection = () => {
           return sig;
         });
       }
+      // Non-Android or missing authToken — MWA is Android-only
+      throw new Error('Transaction signing requires Android with Mobile Wallet Adapter');
     } catch (e) {
       console.error('❌ Transaction failed:', e);
       throw e;

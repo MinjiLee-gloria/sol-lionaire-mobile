@@ -424,8 +424,12 @@ const fc = StyleSheet.create({
 // onClaimed(sig, ts): called after successful claim — persists result in parent
 // onReset(): clears claim result for this city (enables re-claim)
 const ClaimSection = ({ tier, city, walletAddress, signAndSendTransaction, claimedResult, onClaimed, onReset }) => {
-  const [status, setStatus] = useState('idle'); // idle | signing | confirming | error
-  const [copied, setCopied] = useState(false);
+  const [status, setStatus]   = useState('idle'); // idle | signing | confirming | error
+  const [copied, setCopied]   = useState(false);
+  const copiedTimerRef        = useRef(null);
+
+  // Cleanup copy timer on unmount
+  useEffect(() => () => { if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current); }, []);
 
   // Gold burst overlay + button bounce on press
   const flashAnim = useRef(new Animated.Value(0)).current;
@@ -472,8 +476,9 @@ const ClaimSection = ({ tier, city, walletAddress, signAndSendTransaction, claim
     };
     const handleCopy = () => {
       Clipboard.setString(JSON.stringify(memoObj, null, 2));
+      if (copiedTimerRef.current) clearTimeout(copiedTimerRef.current);
       setCopied(true);
-      setTimeout(() => setCopied(false), 2000);
+      copiedTimerRef.current = setTimeout(() => { setCopied(false); copiedTimerRef.current = null; }, 2000);
     };
 
     return (
@@ -695,7 +700,9 @@ export default function EmpireScreen() {
   // Per-city claim results — { MANHATTAN: { txSig, ts } | null, DUBAI: ... }
   const [claimedByCity, setClaimedByCity] = useState({});
 
-  const scrollRef = useRef(null);
+  const scrollRef      = useRef(null);
+  const scrollTimerRef = useRef(null);  // cleanup handle for scrollTo delay
+  const loadReqRef     = useRef(0);     // race-condition guard: only latest load commits state
 
   // 10% tier buffer: remembers last displayed level per city to prevent yo-yo
   const prevTierLevelRef = useRef({ MANHATTAN: null, DUBAI: null });
@@ -710,9 +717,10 @@ export default function EmpireScreen() {
     }
   }, [isConnected]);
 
+  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     if (isConnected) loadData();
-  }, [isConnected, balance, city]);
+  }, [isConnected, balance, city]); // loadData is intentionally omitted — it reads city/balance via closure
 
   // Silent 60s price refresh — no loading spinner
   useEffect(() => {
@@ -746,17 +754,23 @@ export default function EmpireScreen() {
 
   // Scroll to show peek of previous card on mount / data change
   useEffect(() => {
+    if (scrollTimerRef.current) clearTimeout(scrollTimerRef.current);
     if (currentTier && currentTier.level > 1) {
-      setTimeout(() => {
+      scrollTimerRef.current = setTimeout(() => {
         scrollRef.current?.scrollTo({ y: INITIAL_SCROLL, animated: false });
+        scrollTimerRef.current = null;
       }, 100);
     }
+    return () => { if (scrollTimerRef.current) { clearTimeout(scrollTimerRef.current); scrollTimerRef.current = null; } };
   }, [currentTier]);
 
   const loadData = async () => {
+    loadReqRef.current += 1;
+    const myReq = loadReqRef.current;
     setIsLoading(true);
     try {
       const prices = await priceDataService.fetchAllPrices(city);
+      if (myReq !== loadReqRef.current) return; // stale — a newer request is in flight
       const price  = prices.solPrice || 0;
       setSolPrice(price);
 
@@ -775,12 +789,14 @@ export default function EmpireScreen() {
       });
       setCurrentTier(result.tier);
 
-      const up = valueCalculator.calculateUpgrade({ solAmount: sol, solPrice: price, cityType: city });
+      const up = valueCalculator.calculateUpgrade({
+        solAmount: sol, solPrice: price, cityType: city, _tierOverride: bufferedTier,
+      });
       setUpgrade(up);
     } catch (e) {
-      console.error('Empire load failed:', e);
+      if (myReq === loadReqRef.current) console.error('Empire load failed:', e);
     } finally {
-      setIsLoading(false);
+      if (myReq === loadReqRef.current) setIsLoading(false);
     }
   };
 
