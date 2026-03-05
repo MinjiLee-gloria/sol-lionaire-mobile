@@ -28,6 +28,16 @@ SOLIONAIRE maps your Solana wallet balance to iconic real estate tiers — from 
 
 ---
 
+## Hackathon Submission
+
+- Repository: https://github.com/IM-THAT/sol-lionaire-mobile
+- Android APK (latest release asset): https://github.com/IM-THAT/sol-lionaire-mobile/releases/latest/download/app-release.apk
+- Releases page (all APKs): https://github.com/IM-THAT/sol-lionaire-mobile/releases
+
+If the direct APK link returns 404, create a GitHub Release and upload `app-release.apk` as an asset with the exact filename `app-release.apk`.
+
+---
+
 ## Tech Stack
 
 | Layer | Technology |
@@ -54,9 +64,8 @@ sol-lionaire-mobile/
 ├── eas.json                            # EAS build profiles
 │
 ├── assets/
-│   ├── icon.png                        # App icon
-│   ├── adaptive-icon.png               # Android adaptive icon
-│   ├── splash-icon.png                 # Splash icon
+│   ├── app_icon.png                    # App icon source
+│   ├── splash-transparent.png          # Transparent splash image (Android)
 │   └── images/properties/             # Property tier images (ny_1–10, db_1–10)
 │
 └── src/
