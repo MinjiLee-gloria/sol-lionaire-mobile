@@ -416,6 +416,9 @@ export default function HomeScreen() {
   // Displayed values
   const solBalance = balance || 0;
   const totalUSD   = solBalance * solPrice;
+  const shortWalletAddress = walletAddress
+    ? `${walletAddress.slice(0, 6)}...${walletAddress.slice(-6)}`
+    : '';
 
   const tier          = (isConnected && mappingResult) ? mappingResult.tier : null;
   const imageKey      = tier?.imageKey?.[selectedCity] ?? 'ny_level1';
@@ -544,7 +547,7 @@ export default function HomeScreen() {
                 activeOpacity={0.7}
               >
                 <Text style={s.walletTagText} numberOfLines={1}>
-                  {walletAddress}
+                  {shortWalletAddress}
                 </Text>
                 <Text style={s.walletTagCopy}>{copiedAddr ? '✓' : '⎘'}</Text>
               </TouchableOpacity>
@@ -799,17 +802,21 @@ const s = StyleSheet.create({
 
   walletTag: {
     marginTop: 14,
-    backgroundColor: P.mid,
-    borderRadius: 8,
-    paddingHorizontal: 12,
+    backgroundColor: 'rgba(27,27,27,0.95)',
+    borderWidth: 1,
+    borderColor: 'rgba(201,168,76,0.32)',
+    borderRadius: 999,
+    paddingLeft: 12,
+    paddingRight: 10,
     paddingVertical: 6,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 8,
-    maxWidth: '100%',
+    gap: 4,
+    alignSelf: 'center',
+    maxWidth: SCREEN_W - 48,
   },
-  walletTagText: { flex: 1, fontSize: 11, color: P.gray, fontFamily: 'monospace' },
-  walletTagCopy: { fontSize: 11, color: P.gold, flexShrink: 0 },
+  walletTagText: { fontSize: 11, color: P.gray, fontFamily: 'monospace', flexShrink: 1 },
+  walletTagCopy: { fontSize: 12, color: P.gold, fontWeight: '700', flexShrink: 0 },
 
   // City tab bar — underline indicator style
   cityTabBar: {
