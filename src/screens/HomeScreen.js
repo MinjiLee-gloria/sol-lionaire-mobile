@@ -12,7 +12,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,
   TouchableOpacity, StatusBar, Animated, Image,
-  Dimensions, PanResponder, Easing,
+  Dimensions, PanResponder, Easing, Clipboard,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import Svg, { Polyline } from 'react-native-svg';
@@ -230,6 +230,7 @@ export default function HomeScreen() {
   const [mappingResult,  setMappingResult]  = useState(null);
   const [isCalculating,  setIsCalculating]  = useState(false);
   const [showPicker,     setShowPicker]     = useState(false);
+  const [copiedAddr,     setCopiedAddr]     = useState(false);
 
   // Lustre meter — 24h decay, swipe-to-buff, 7-day Midas streak
   const { lustre, streak, isMidasTouch, buff } = useLustre(walletAddress);
@@ -533,11 +534,20 @@ export default function HomeScreen() {
               )}
 
               {/* Wallet tag */}
-              <View style={s.walletTag}>
-                <Text style={s.walletTagText}>
-                  {walletAddress?.slice(0, 4)}…{walletAddress?.slice(-4)}
+              <TouchableOpacity
+                style={s.walletTag}
+                onPress={() => {
+                  Clipboard.setString(walletAddress);
+                  setCopiedAddr(true);
+                  setTimeout(() => setCopiedAddr(false), 2000);
+                }}
+                activeOpacity={0.7}
+              >
+                <Text style={s.walletTagText} numberOfLines={1}>
+                  {walletAddress}
                 </Text>
-              </View>
+                <Text style={s.walletTagCopy}>{copiedAddr ? '✓' : '⎘'}</Text>
+              </TouchableOpacity>
             </LinearGradient>
           </View>}
 
@@ -792,9 +802,14 @@ const s = StyleSheet.create({
     backgroundColor: P.mid,
     borderRadius: 8,
     paddingHorizontal: 12,
-    paddingVertical: 4,
+    paddingVertical: 6,
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    maxWidth: '100%',
   },
-  walletTagText: { fontSize: 11, color: P.gray, fontFamily: 'monospace' },
+  walletTagText: { flex: 1, fontSize: 11, color: P.gray, fontFamily: 'monospace' },
+  walletTagCopy: { fontSize: 11, color: P.gold, flexShrink: 0 },
 
   // City tab bar — underline indicator style
   cityTabBar: {

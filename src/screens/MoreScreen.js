@@ -7,10 +7,10 @@
  *  - Project Info      : Hackathon details, social links
  *  - Legal Disclaimer
  */
-import React from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, ScrollView, StyleSheet,
-  TouchableOpacity, Linking,
+  TouchableOpacity, Linking, Clipboard,
 } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useWallet } from '../context/WalletContext';
@@ -43,10 +43,13 @@ const Row = ({ label, value, onPress, isLast, danger }) => (
 // ── Main Screen ───────────────────────────────────────────────────────────────
 export default function MoreScreen() {
   const { walletAddress, isConnected, walletName, disconnectWallet } = useWallet();
+  const [copiedAddr, setCopiedAddr] = useState(false);
 
-  const shortAddr = walletAddress
-    ? `${walletAddress.slice(0, 6)}…${walletAddress.slice(-6)}`
-    : null;
+  const handleCopyAddress = () => {
+    Clipboard.setString(walletAddress);
+    setCopiedAddr(true);
+    setTimeout(() => setCopiedAddr(false), 2000);
+  };
 
   return (
     <LinearGradient colors={[P.black, P.charcoal]} style={s.flex}>
@@ -64,7 +67,18 @@ export default function MoreScreen() {
           {isConnected ? (
             <>
               <Row label="Provider"  value={walletName || 'Seed Vault'} isLast={false} />
-              <Row label="Address"   value={shortAddr}                   isLast={false} />
+              {/* Address row with full address + copy button */}
+              <TouchableOpacity
+                style={[s.row, s.rowBorder]}
+                onPress={handleCopyAddress}
+                activeOpacity={0.6}
+              >
+                <Text style={s.rowLabel}>Address</Text>
+                <View style={s.addrRight}>
+                  <Text style={s.addrText} numberOfLines={1}>{walletAddress}</Text>
+                  <Text style={s.addrCopy}>{copiedAddr ? '✓' : '⎘'}</Text>
+                </View>
+              </TouchableOpacity>
               <Row
                 label="Disconnect"
                 value="→"
@@ -81,7 +95,7 @@ export default function MoreScreen() {
         {/* ── App Info ─────────────────────────────────────────────────── */}
         <Section title="APPLICATION">
           <Row label="Version"       value="0.5.0 (Beta)" isLast={false} />
-          <Row label="Network"       value="Solana Devnet"  isLast={false} />
+          <Row label="Network"       value="Solana Mainnet"  isLast={false} />
           <Row label="Price Oracle"  value="CoinGecko"      isLast={false} />
           <Row label="Swap Protocol" value="Jupiter v6"     isLast />
         </Section>
@@ -163,6 +177,10 @@ const s = StyleSheet.create({
   rowBorder: { borderBottomWidth: 1, borderBottomColor: P.border },
   rowLabel:  { fontSize: 14, color: P.offWhite, flex: 1 },
   rowValue:  { fontSize: 13, color: P.gray },
+
+  addrRight: { flexDirection: 'row', alignItems: 'center', gap: 8, flex: 1, justifyContent: 'flex-end' },
+  addrText:  { fontSize: 13, color: P.gray, fontFamily: 'monospace', flex: 1, textAlign: 'right' },
+  addrCopy:  { fontSize: 13, color: P.gold, flexShrink: 0 },
 
   // Disclaimer
   disclaimer: {
