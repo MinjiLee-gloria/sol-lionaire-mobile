@@ -1,5 +1,6 @@
 import 'react-native-get-random-values';
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
+import { preloadSounds } from './src/utils/sounds';
 import { NavigationContainer } from '@react-navigation/native';
 import { createBottomTabNavigator } from '@react-navigation/bottom-tabs';
 import { StyleSheet } from 'react-native';
@@ -19,6 +20,8 @@ const Tab = createBottomTabNavigator();
 
 export default function App() {
   const [splashDone, setSplashDone] = useState(false);
+
+  useEffect(() => { preloadSounds(); }, []);
 
   return (
     <SafeAreaProvider>

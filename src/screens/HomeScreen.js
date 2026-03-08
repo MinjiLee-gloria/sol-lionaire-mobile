@@ -29,6 +29,7 @@ import { PROPERTY_IMAGES } from '../constants/images';
 import { FloatingBadge, DefaultBadge } from '../components/BadgeComponents';
 import { BuffFlash, SparkParticles, LustreGauge } from '../components/LustreComponents';
 import WalletPickerModal from '../components/WalletPickerModal';
+import { playSound } from '../utils/sounds';
 
 const { width: SCREEN_W, height: SCREEN_H } = Dimensions.get('window');
 
@@ -257,7 +258,10 @@ export default function HomeScreen() {
         Math.abs(dx) > 12 && Math.abs(dx) > Math.abs(dy),
       onPanResponderRelease: (_, { dx }) => {
         if (Math.abs(dx) > 35) {
-          buffRef.current();
+          buffRef.current().then(result => {
+            if (result?.midasUnlocked) playSound('midas_fanfare');
+          });
+          playSound('swipe_buff');
           setFlashText(pickQuote());
           setShowFlash(true);
           setBuffCount(c => c + 1);
@@ -364,6 +368,7 @@ export default function HomeScreen() {
   // City switch: fade hero+balance out → switch city → fade back in
   const handleCityChange = useCallback((cityKey) => {
     if (cityKey === selectedCity) return;
+    playSound('city_toggle');
     Animated.timing(cityFade, { toValue: 0, duration: 150, useNativeDriver: true }).start(() => {
       setSelectedCity(cityKey);
       Animated.timing(cityFade, { toValue: 1, duration: 280, useNativeDriver: true }).start();
@@ -372,7 +377,8 @@ export default function HomeScreen() {
 
   const handleWalletSelect = async (walletId) => {
     setShowPicker(false);
-    await connectWallet(walletId);
+    const result = await connectWallet(walletId);
+    if (result?.publicKey) playSound('wallet_connect');
   };
 
   const saveToHistory = async (result) => {
@@ -541,6 +547,7 @@ export default function HomeScreen() {
                 style={s.walletTag}
                 onPress={() => {
                   Clipboard.setString(walletAddress);
+                  playSound('copy_click');
                   setCopiedAddr(true);
                   setTimeout(() => setCopiedAddr(false), 2000);
                 }}

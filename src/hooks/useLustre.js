@@ -75,11 +75,13 @@ export const useLustre = (walletAddress) => {
       }
 
       // 7-day milestone → grant Midas Touch for 7 days, reset counter
+      let midasUnlocked = false;
       if (newStreak >= 7) {
         const midasEnd = new Date();
         midasEnd.setDate(midasEnd.getDate() + 7);
-        midasUntil = midasEnd.toISOString();
-        newStreak  = 0;
+        midasUntil    = midasEnd.toISOString();
+        newStreak     = 0;
+        midasUnlocked = true;
       }
 
       const updated = {
@@ -93,6 +95,7 @@ export const useLustre = (walletAddress) => {
       setLustre(100);
       setStreak(newStreak);
       setIsMidasTouch(midasUntil ? new Date(midasUntil) > new Date() : false);
+      return { midasUnlocked };
     } catch (e) {
       console.error('[useLustre] Failed to write lustre state:', e);
     }

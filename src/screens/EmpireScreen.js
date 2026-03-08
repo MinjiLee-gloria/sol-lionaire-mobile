@@ -22,6 +22,7 @@ import { priceDataService } from '../services/pythPriceService';
 import { buildClaimTransaction, getExplorerUrl, DEV_MODE } from '../services/claimService';
 import { P } from '../constants/theme';
 import { PROPERTY_IMAGES } from '../constants/images';
+import { playSound } from '../utils/sounds';
 
 // ── Jupiter deep link: open app if installed, fall back to web ────────────────
 const JUP_WEB_URL = 'https://jup.ag/swap/USDC-SOL';
@@ -304,7 +305,7 @@ const ProgressSection = ({ upgrade, city, solBalance, solPrice }) => {
 
       {/* ⑥ Level Up button — pulsing gold glow draws the eye */}
       <Animated.View style={[pg.jupOuter, { transform: [{ scale: pulseScale }] }]}>
-        <TouchableOpacity style={pg.jupBtn} onPress={openJupiter} activeOpacity={0.85}>
+        <TouchableOpacity style={pg.jupBtn} onPress={() => { playSound('level_up'); openJupiter(); }} activeOpacity={0.85}>
           <LinearGradient
             colors={[P.goldDeep, P.gold, P.goldLight]}
             start={{ x: 0, y: 0 }} end={{ x: 1, y: 0 }}
@@ -448,6 +449,7 @@ const ClaimSection = ({ tier, city, walletAddress, signAndSendTransaction, claim
       setStatus('confirming');
       const sig = await signAndSendTransaction(tx);
       onClaimed(sig, Date.now()); // lift result to parent (persists per city)
+      playSound('claim_success');
       setStatus('idle');
     } catch (e) {
       console.error('Claim failed:', e);
@@ -472,6 +474,7 @@ const ClaimSection = ({ tier, city, walletAddress, signAndSendTransaction, claim
     };
     const handleCopy = () => {
       Clipboard.setString(JSON.stringify(memoObj, null, 2));
+      playSound('copy_click');
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     };
@@ -805,7 +808,7 @@ export default function EmpireScreen() {
             <TouchableOpacity
               key={c}
               style={[s.toggleBtn, city === c && s.toggleActive]}
-              onPress={() => setCity(c)}
+              onPress={() => { playSound('city_toggle'); setCity(c); }}
             >
               <Text style={[s.toggleText, city === c && s.toggleTextActive]}>
                 {c === CityType.MANHATTAN ? '🗽 NYC' : '🏙️ Dubai'}
